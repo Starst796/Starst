@@ -1,0 +1,2724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联机房间管理系统 - 管理员控制台</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6b8cbc;
+            --accent-color: #ff7e5f;
+            --light-color: #f5f7fa;
+            --dark-color: #2c3e50;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .auth-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+        
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .btn:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .admin-content {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .panel {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow:    2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .panel h2 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-color);
+            padding-bottom: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: var(--light-color);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table th {
+            background-color: var(--light-color);
+            font-weight: 600;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .tab-nav {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        /* 系统消息样式 */
+        .template-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .template-btn {
+            margin-bottom: 5px;
+        }
+        
+        .recent-messages-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .recent-message-item {
+            background-color: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        
+        .recent-message-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .template-buttons {
+                flex-direction: column;
+            }
+            
+            .template-btn {
+                width: 100%;
+            }
+        }
+        
+        /* 模态框样式修复 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.hidden {
+            display: none !important;
+        }
+        
+        .modal:not(.hidden) {
+            display: flex !important;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        
+        /* 成员列表样式 */
+        .member-list {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        
+        .member-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .member-name {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .member-profile {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .member-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-ready {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+        
+        .status-not-ready {
+            color: var(--warning-color);
+        }
+        
+        .creator-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+        
+        .status-select {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        /* 聊天记录管理样式 */
+        .filter-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-controls .form-group {
+            margin-bottom: 0;
+        }
+        
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .stats-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        /* 房间过滤器样式 */
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-controls .form-group {
+            margin-bottom: 0;
+            flex: 0 0 auto;
+        }
+        
+        .filter-controls label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .stats-info {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        /* 表格中的长文本处理 */
+        .data-table td {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-controls .form-group {
+                width: 100%;
+            }
+            
+            .filter-controls .form-group select,
+            .filter-controls .form-group input {
+                width: 100% !important;
+                margin-left: 0 !important;
+            }
+            
+            .filter-controls .btn {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .data-table {
+                font-size: 0.8rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 8px 10px;
+            }
+        }
+        
+        /* 消息内容样式 */
+        .chat-message-content {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* 房间状态指示器样式 */
+        .room-status-active {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+        
+        .room-status-inactive {
+            color: var(--error-color);
+            font-style: italic;
+        }
+        
+        /* 表格行样式 */
+        .inactive-room-row {
+            background-color: #f8f9fa !important;
+            color: #6c757d;
+        }
+        
+        .inactive-room-row:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        /* 过滤控件样式 */
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-controls .form-group {
+            margin-bottom: 0;
+            flex: 0 0 auto;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-controls .form-group {
+                width: 100%;
+            }
+            
+            .filter-controls .form-group select {
+                width: 100% !important;
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .filter-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .filter-controls .form-group {
+                display: block;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            
+            .table-container {
+                font-size: 0.8rem;
+            }
+            
+            .chat-message-content {
+                max-width: 150px;
+            }
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .notification {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .notification.success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+        
+        .notification.error {
+            background-color: rgba(231, 76, 60, 0.2);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+        
+        .notification.warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            border: 1px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+        
+        .status-inactive {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--error-color);
+        }
+        
+        .log-entry {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-level-info {
+            color: var(--success-color);
+        }
+        
+        .log-level-warning {
+            color: var(--warning-color);
+        }
+        
+        .log-level-error {
+            color: var(--error-color);
+        }
+        
+        @media (max-width: 768px) {
+            .admin-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo">联机房间管理系统 - 管理员控制台</div>
+            <div class="auth-section">
+                <span id="user-info"></span>
+                <button id="logout-btn" class="btn btn-secondary">退出管理台</button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- 认证面板 -->
+        <div id="auth-panel" class="panel">
+            <h2>管理员登录</h2>
+            <div id="auth-notification" class="notification hidden"></div>
+            <div class="form-group">
+                <label for="username">管理员用户名</label>
+                <input type="text" id="username" class="form-control" placeholder="请输入管理员用户名">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" class="form-control" placeholder="请输入密码">
+            </div>
+            <div class="form-group">
+                <button id="signin-btn" class="btn btn-primary">登录</button>
+            </div>
+        </div>
+        
+        <!-- 管理员控制台 -->
+        <div id="admin-content" class="admin-content hidden">
+            <!-- 左侧统计面板 -->
+            <div>
+                <div class="panel">
+                    <h2>系统概览</h2>
+                    <div id="stats-loading" class="loading hidden">
+                        <div class="spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+                    <div id="stats-content" class="stats-grid">
+                        <!-- 统计信息将通过JavaScript动态生成 -->
+                    </div>
+                    <button id="refresh-stats-btn" class="btn btn-secondary" style="margin-top: 15px; width: 100%;">刷新数据</button>
+                </div>
+                
+                <div class="panel">
+                    <h2>快速操作</h2>
+                    <button id="refresh-all-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">刷新所有数据</button>
+                    <button id="export-data-btn" class="btn btn-secondary" style="width: 100%;">导出数据</button>
+                </div>
+            </div>
+            
+            <!-- 右侧内容区域 -->
+            <div>
+                <div class="panel">
+                    <div class="tab-nav">
+                        <button class="tab-btn" data-tab="users">用户管理</button>
+                        <button class="tab-btn" data-tab="rooms">房间管理</button>
+                        <button class="tab-btn" data-tab="chat-messages">聊天记录</button>
+                        <button class="tab-btn" data-tab="system-messages">系统消息</button>
+                        <button class="tab-btn" data-tab="logs">系统日志</button>
+                    </div>
+                    
+                    <div id="users-tab" class="tab-content active">
+                        <h3>用户列表</h3>
+                        <div id="users-notification" class="notification hidden"></div>
+                        <button id="refresh-users-btn" class="btn btn-secondary">刷新用户列表</button>
+                        <div id="users-loading" class="loading hidden">
+                            <div class="spinner"></div>
+                            <p>加载中...</p>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>用户名</th>
+                                    <th>注册时间</th>
+                                    <th>上次登录</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- 用户数据将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="rooms-tab" class="tab-content">
+                        <h3>房间列表</h3>
+                        <div id="rooms-notification" class="notification hidden"></div>
+                        
+                        <!-- 房间过滤器 -->
+                        <div class="filter-controls" style="margin-bottom: 20px;">
+                            <div class="form-group" style="display: inline-block; margin-right: 15px;">
+                                <label for="room-status-filter">房间状态:</label>
+                                <select id="room-status-filter" class="form-control" style="width: 140px; display: inline-block; margin-left: 10px;">
+                                    <option value="all">全部状态</option>
+                                    <option value="active">仅活跃</option>
+                                    <option value="inactive">仅已关闭</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="display: inline-block; margin-right: 15px;">
+                                <label for="room-game-status-filter">游戏状态:</label>
+                                <select id="room-game-status-filter" class="form-control" style="width: 140px; display: inline-block; margin-left: 10px;">
+                                    <option value="all">全部状态</option>
+                                    <option value="waiting">等待中</option>
+                                    <option value="playing">游戏中</option>
+                                    <option value="finished">已结束</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="display: inline-block; margin-right: 15px;">
+                                <label for="room-creator-filter">创建者:</label>
+                                <select id="room-creator-filter" class="form-control" style="width: 150px; display: inline-block; margin-left: 10px;">
+                                    <option value="all">全部创建者</option>
+                                    <!-- 创建者选项将通过JavaScript动态生成 -->
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="display: inline-block; margin-right: 15px;">
+                                <label for="room-search">搜索房间:</label>
+                                <input type="text" id="room-search" class="form-control" placeholder="房间名称..." style="width: 180px; display: inline-block; margin-left: 10px;">
+                            </div>
+                            
+                            <button id="refresh-rooms-btn" class="btn btn-secondary">刷新列表</button>
+                            <button id="clear-room-filters-btn" class="btn btn-secondary">清除过滤</button>
+                        </div>
+                        
+                        <div id="rooms-loading" class="loading hidden">
+                            <div class="spinner"></div>
+                            <p>加载中...</p>
+                        </div>
+                        
+                        <!-- 房间统计信息 -->
+                        <div class="stats-info" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                            <strong>房间统计:</strong>
+                            <span id="total-rooms-count">0</span> 个房间
+                            <span id="active-rooms-count" style="margin-left: 15px; color: var(--success-color);">0 活跃</span>
+                            <span id="inactive-rooms-count" style="margin-left: 10px; color: var(--error-color);">0 已关闭</span>
+                            <span id="filtered-rooms-info" style="margin-left: 15px;"></span>
+                        </div>
+                        
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>房间名称</th>
+                                    <th>创建者</th>
+                                    <th>游戏状态</th>
+                                    <th>玩家数</th>
+                                    <th>创建时间</th>
+                                    <th>状态控制</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rooms-table-body">
+                                <!-- 房间数据将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="chat-messages-tab" class="tab-content">
+                        <h3>聊天记录管理</h3>
+                        <div id="chat-messages-notification" class="notification hidden"></div>
+                        
+                        <!-- 过滤控件 -->
+                        <div class="filter-controls" style="margin-bottom: 20px;">
+                            <div class="form-group" style="display: inline-block; margin-right: 15px;">
+                                <label for="room-status-filter">房间状态:</label>
+                                <select id="room-status-filter" class="form-control" style="width: 120px; display: inline-block; margin-left: 10px;">
+                                    <option value="all">全部状态</option>
+                                    <option value="active">仅活跃</option>
+                                    <option value="inactive">仅已关闭</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: inline-block; margin-right: 15px;">
+                                <label for="room-filter">按房间过滤:</label>
+                                <select id="room-filter" class="form-control" style="width: 250px; display: inline-block; margin-left: 10px;">
+                                    <option value="">所有房间</option>
+                                    <!-- 房间选项将通过JavaScript动态生成 -->
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="display: inline-block; margin-right: 15px;">
+                                <label for="messages-per-page">每页显示:</label>
+                                <select id="messages-per-page" class="form-control" style="width: 80px; display: inline-block; margin-left: 10px;">
+                                    <option value="20">20</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            
+                            <button id="refresh-chat-messages-btn" class="btn btn-secondary">刷新记录</button>
+                            <button id="clear-chat-filters-btn" class="btn btn-secondary">清除过滤</button>
+                        </div>
+                        
+                        <!-- 加载状态 -->
+                        <div id="chat-messages-loading" class="loading hidden">
+                            <div class="spinner"></div>
+                            <p>加载中...</p>
+                        </div>
+                        
+                        <!-- 聊天记录表格 -->
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>房间</th>
+                                        <th>用户</th>
+                                        <th>类型</th>
+                                        <th>内容</th>
+                                        <th>时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="chat-messages-table-body">
+                                    <!-- 聊天记录数据将通过JavaScript动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 分页控件 -->
+                        <div class="pagination-controls" style="margin-top: 20px; text-align: center;">
+                            <button id="prev-page-btn" class="btn btn-secondary">上一页</button>
+                            <span id="page-info" style="margin: 0 15px;">第 1 页，共 1 页</span>
+                            <button id="next-page-btn" class="btn btn-secondary">下一页</button>
+                        </div>
+                        
+                        <!-- 统计信息 -->
+                        <div class="stats-info" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                            <strong>统计信息:</strong>
+                            <span id="total-messages-count">0</span> 条消息
+                            <span id="filtered-info" style="margin-left: 15px;"></span>
+                        </div>
+                    </div>
+                    
+                    <div id="system-messages-tab" class="tab-content">
+                        <h3>系统消息管理</h3>
+                        <div id="system-messages-notification" class="notification hidden"></div>
+                        
+                        <div class="panel">
+                            <h4>发送系统消息</h4>
+                            <div class="form-group">
+                                <label for="system-message-type">消息类型</label>
+                                <select id="system-message-type" class="form-control">
+                                    <option value="announcement">公告通知</option>
+                                    <option value="maintenance">维护通知</option>
+                                    <option value="update">更新通知</option>
+                                    <option value="emergency">紧急通知</option>
+                                    <option value="custom">自定义消息</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="system-message-target">发送范围</label>
+                                <select id="system-message-target" class="form-control">
+                                    <option value="all">所有房间</option>
+                                    <option value="active">仅活跃房间</option>
+                                    <option value="specific">指定房间</option>
+                                </select>
+                            </div>
+                            
+                            <div id="specific-room-container" class="form-group hidden">
+                                <label for="specific-room-id">房间ID</label>
+                                <input type="number" id="specific-room-id" class="form-control" placeholder="请输入房间ID">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="system-message-content">消息内容</label>
+                                <textarea id="system-message-content" class="form-control" rows="4" placeholder="请输入系统消息内容..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button id="send-system-message-btn" class="btn btn-primary">发送系统消息</button>
+                                <button id="preview-system-message-btn" class="btn btn-secondary">预览消息</button>
+                            </div>
+                        </div>
+                        
+                        <div class="panel">
+                            <h4>消息模板</h4>
+                            <div class="template-buttons">
+                                <button class="btn btn-secondary template-btn" data-template="maintenance">维护通知模板</button>
+                                <button class="btn btn-secondary template-btn" data-template="update">更新通知模板</button>
+                                <button class="btn btn-secondary template-btn" data-template="emergency">紧急通知模板</button>
+                            </div>
+                        </div>
+                        
+                        <div class="panel">
+                            <h4>最近发送的系统消息</h4>
+                            <div id="recent-system-messages">
+                                <!-- 最近发送的消息将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="logs-tab" class="tab-content">
+                        <h3>系统日志</h3>
+                        <div id="logs-notification" class="notification hidden"></div>
+                        <button id="refresh-logs-btn" class="btn btn-secondary">刷新日志</button>
+                        <div id="logs-loading" class="loading hidden">
+                            <div class="spinner"></div>
+                            <p>加载中...</p>
+                        </div>
+                        <div id="logs-content">
+                            <!-- 日志内容将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看房间信息模态框 -->
+    <div id="room-info-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 id="room-info-title">房间信息</h3>
+                <button id="close-info-modal" class="btn btn-secondary" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="room-info-loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div id="room-info-content">
+                    <!-- 房间信息将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-info-modal-btn" class="btn btn-secondary">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API基础URL
+        const API_BASE_URL = '/api';
+        
+        // 全局状态
+        let currentAdminToken = null;
+        let currentAdminUser = null;
+        let currentChatPage = 1;
+        let currentChatPerPage = 50;
+        let currentRoomFilter = '';
+        let chatMessagesData = null;
+        // 房间过滤相关变量
+        let allRoomsData = []; // 存储所有房间数据
+        let filteredRoomsData = []; // 存储过滤后的房间数据
+        let currentRoomStatusFilter = 'all';
+        let currentGameStatusFilter = 'all';
+        let currentCreatorFilter = 'all';
+        let currentRoomSearch = '';
+        // 房间成员相关变量
+        let currentRoomMembers = null;
+        let recentSystemMessages = [];
+
+        // DOM 元素
+        const roomStatusFilter = document.getElementById('room-status-filter');
+        const roomGameStatusFilter = document.getElementById('room-game-status-filter');
+        const roomCreatorFilter = document.getElementById('room-creator-filter');
+        const roomSearchInput = document.getElementById('room-search');
+        const clearRoomFiltersBtn = document.getElementById('clear-room-filters-btn');
+
+        const totalRoomsCount = document.getElementById('total-rooms-count');
+        const activeRoomsCount = document.getElementById('active-rooms-count');
+        const inactiveRoomsCount = document.getElementById('inactive-rooms-count');
+        const filteredRoomsInfo = document.getElementById('filtered-rooms-info');
+
+        const roomManagementStatusFilter = document.getElementById('room-status-filter');
+        
+        // 房间信息模态框元素
+        const roomInfoModal = document.getElementById('room-info-modal');
+        const roomInfoTitle = document.getElementById('room-info-title');
+        const roomInfoContent = document.getElementById('room-info-content');
+        const roomInfoLoading = document.getElementById('room-info-loading');
+        const closeInfoModal = document.getElementById('close-info-modal');
+        const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+
+        // 系统消息相关元素
+        const systemMessagesTab = document.getElementById('system-messages-tab');
+        const systemMessagesNotification = document.getElementById('system-messages-notification');
+        const systemMessageType = document.getElementById('system-message-type');
+        const systemMessageTarget = document.getElementById('system-message-target');
+        const specificRoomContainer = document.getElementById('specific-room-container');
+        const specificRoomId = document.getElementById('specific-room-id');
+        const systemMessageContent = document.getElementById('system-message-content');
+        const sendSystemMessageBtn = document.getElementById('send-system-message-btn');
+        const previewSystemMessageBtn = document.getElementById('preview-system-message-btn');
+        const templateButtons = document.querySelectorAll('.template-btn');
+        const recentSystemMessagesContainer = document.getElementById('recent-system-messages');
+
+        // DOM元素
+        const authPanel = document.getElementById('auth-panel');
+        const adminContent = document.getElementById('admin-content');
+        const logoutBtn = document.getElementById('logout-btn');
+        const signinBtn = document.getElementById('signin-btn');
+        const userInfo = document.getElementById('user-info');
+        
+        // 统计相关
+        const statsContent = document.getElementById('stats-content');
+        const refreshStatsBtn = document.getElementById('refresh-stats-btn');
+        const statsLoading = document.getElementById('stats-loading');
+        
+        // 标签页相关
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // 用户管理相关
+        const usersTableBody = document.getElementById('users-table-body');
+        const refreshUsersBtn = document.getElementById('refresh-users-btn');
+        const usersLoading = document.getElementById('users-loading');
+        const usersNotification = document.getElementById('users-notification');
+        
+        // 房间管理相关
+        const roomsTableBody = document.getElementById('rooms-table-body');
+        const refreshRoomsBtn = document.getElementById('refresh-rooms-btn');
+        const roomsLoading = document.getElementById('rooms-loading');
+        const roomsNotification = document.getElementById('rooms-notification');
+        
+        // 聊天记录相关
+        const chatMessagesTableBody = document.getElementById('chat-messages-table-body');
+        const chatMessagesLoading = document.getElementById('chat-messages-loading');
+        const chatMessagesNotification = document.getElementById('chat-messages-notification');
+        const refreshChatMessagesBtn = document.getElementById('refresh-chat-messages-btn');
+        const roomFilter = document.getElementById('room-filter');
+        const messagesPerPage = document.getElementById('messages-per-page');
+        const clearChatFiltersBtn = document.getElementById('clear-chat-filters-btn');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageInfo = document.getElementById('page-info');
+        const totalMessagesCount = document.getElementById('total-messages-count');
+        const filteredInfo = document.getElementById('filtered-info');
+        
+        // 日志相关
+        const logsContent = document.getElementById('logs-content');
+        const refreshLogsBtn = document.getElementById('refresh-logs-btn');
+        const logsLoading = document.getElementById('logs-loading');
+        const logsNotification = document.getElementById('logs-notification');
+        
+        // 快速操作
+        const refreshAllBtn = document.getElementById('refresh-all-btn');
+        const exportDataBtn = document.getElementById('export-data-btn');
+        
+        // 通知元素
+        const authNotification = document.getElementById('auth-notification');
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedToken = localStorage.getItem('adminToken');
+            const savedUser = localStorage.getItem('adminUser');
+            
+            if (savedToken && savedUser) {
+                currentAdminToken = savedToken;
+                currentAdminUser = JSON.parse(savedUser);
+                showAdminContent();
+                loadStats();
+                loadUsers();
+            } else {
+                showAuthPanel();
+            }
+            
+            bindEventListeners();
+        });
+        
+        // 绑定事件监听器
+        function bindEventListeners() {
+            // 认证相关
+            if (signinBtn) signinBtn.addEventListener('click', handleAdminLogin);
+            if (logoutBtn) logoutBtn.addEventListener('click', handleAdminLogout);
+            if (refreshRoomsBtn) refreshRoomsBtn.addEventListener('click', loadRooms);
+            
+            // 标签页切换
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+
+            // 聊天消息相关事件
+            if (refreshChatMessagesBtn) refreshChatMessagesBtn.addEventListener('click', loadChatMessages);
+            if (roomFilter) roomFilter.addEventListener('change', handleRoomFilterChange);
+            if (messagesPerPage) messagesPerPage.addEventListener('change', handlePerPageChange);
+            if (clearChatFiltersBtn) clearChatFiltersBtn.addEventListener('click', clearChatFilters);
+            if (prevPageBtn) prevPageBtn.addEventListener('click', goToPrevPage);
+            if (nextPageBtn) nextPageBtn.addEventListener('click', goToNextPage);
+
+            // 房间管理过滤相关事件
+            if (roomManagementStatusFilter) roomManagementStatusFilter.addEventListener('change', handleRoomManagementFilterChange);
+            if (roomGameStatusFilter) roomGameStatusFilter.addEventListener('change', handleRoomManagementFilterChange);
+            if (roomCreatorFilter) roomCreatorFilter.addEventListener('change', handleRoomManagementFilterChange);
+            if (roomSearchInput) roomSearchInput.addEventListener('input', handleRoomManagementFilterChange);
+            if (clearRoomFiltersBtn) clearRoomFiltersBtn.addEventListener('click', clearRoomManagementFilters);
+
+            // 数据刷新
+            if (refreshStatsBtn) refreshStatsBtn.addEventListener('click', loadStats);
+            if (refreshUsersBtn) refreshUsersBtn.addEventListener('click', loadUsers);
+            if (refreshRoomsBtn) refreshRoomsBtn.addEventListener('click', loadRooms);
+            if (refreshLogsBtn) refreshLogsBtn.addEventListener('click', loadLogs);
+            if (refreshAllBtn) refreshAllBtn.addEventListener('click', refreshAllData);
+            
+            // 快速操作
+            if (exportDataBtn) exportDataBtn.addEventListener('click', exportData);
+            
+            // 允许按Enter键登录
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            if (usernameInput) usernameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') handleAdminLogin();
+            });
+            if (passwordInput) passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') handleAdminLogin();
+            });
+
+            // 系统消息相关事件
+            if (systemMessageTarget) {
+                systemMessageTarget.addEventListener('change', handleTargetChange);
+            }
+            if (sendSystemMessageBtn) {
+                sendSystemMessageBtn.addEventListener('click', sendSystemMessage);
+            }
+            if (previewSystemMessageBtn) {
+                previewSystemMessageBtn.addEventListener('click', previewSystemMessage);
+            }
+            
+            // 模板按钮事件
+            templateButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const template = this.getAttribute('data-template');
+                    loadMessageTemplate(template);
+                });
+            });
+
+            // 房间信息模态框事件
+            if (closeInfoModal) {
+                closeInfoModal.addEventListener('click', closeRoomInfoModal);
+            }
+            if (closeInfoModalBtn) {
+                closeInfoModalBtn.addEventListener('click', closeRoomInfoModal);
+            }
+            if (roomInfoModal) {
+                roomInfoModal.addEventListener('click', function(e) {
+                    if (e.target === roomInfoModal) {
+                        closeRoomInfoModal();
+                    }
+                });
+            }
+        }        
+        
+        // 显示通知
+        function showNotification(element, message, type = 'error') {
+            element.textContent = message;
+            element.className = `notification ${type}`;
+            element.classList.remove('hidden');
+            
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // 显示认证面板
+        function showAuthPanel() {
+            authPanel.classList.remove('hidden');
+            adminContent.classList.add('hidden');
+            
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+        
+        // 显示管理员内容
+        function showAdminContent() {
+            authPanel.classList.add('hidden');
+            adminContent.classList.remove('hidden');
+            userInfo.textContent = `管理员：${currentAdminUser.username}`;
+        }
+        
+        // 切换标签页
+        function switchTab(tabId) {
+            // 更新标签按钮状态
+            tabBtns.forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // 更新标签内容状态
+            tabContents.forEach(content => {
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            // 加载对应标签的数据
+            if (tabId === 'users') {
+                loadUsers();
+            } else if (tabId === 'rooms') {
+                loadRooms();
+            } else if (tabId === 'chat-messages') {
+                loadChatMessages();
+            } else if (tabId === 'logs') {
+                loadLogs();
+            } else if (tabId === 'system-messages') {
+                loadRecentSystemMessages();
+            }
+        }
+        
+        // 显示房间信息
+        async function showRoomInfo(roomId) {
+            if (!roomInfoModal || !roomInfoLoading || !roomInfoContent) {
+                console.error('房间信息模态框元素未找到');
+                alert('系统错误：无法打开房间信息，请刷新页面重试');
+                return;
+            }
+
+            try {
+                // 显示加载状态
+                roomInfoLoading.classList.remove('hidden');
+                roomInfoContent.innerHTML = '';
+                
+                // 获取房间详细信息
+                const roomResponse = await fetch(`${API_BASE_URL}/admin/rooms/${roomId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                if (!roomResponse.ok) {
+                    throw new Error(`获取房间信息失败: ${roomResponse.status}`);
+                }
+                
+                const roomData = await roomResponse.json();
+                
+                // 获取房间成员信息
+                const membersResponse = await fetch(`${API_BASE_URL}/admin/rooms/${roomId}/members`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                if (!membersResponse.ok) {
+                    throw new Error(`获取成员列表失败: ${membersResponse.status}`);
+                }
+                
+                const membersData = await membersResponse.json();
+                
+                if (roomResponse.ok && membersResponse.ok) {
+                    displayRoomInfo(roomData.room, membersData);
+                    // 显示模态框
+                    roomInfoModal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    throw new Error('获取房间信息失败');
+                }
+            } catch (error) {
+                console.error('获取房间信息错误:', error);
+                roomInfoContent.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--error-color);">
+                        <p>获取房间信息失败</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
+                roomInfoModal.classList.remove('hidden');
+            } finally {
+                // 隐藏加载状态
+                if (roomInfoLoading) {
+                    roomInfoLoading.classList.add('hidden');
+                }
+            }
+        }
+
+        // 显示房间详细信息
+        function displayRoomInfo(room, membersData) {
+            const { members } = membersData;
+            
+            roomInfoTitle.textContent = `房间信息 - ${room.name} (ID: ${room.id})`;
+            
+            // 格式化游戏状态
+            const gameStatusText = {
+                'waiting': '等待中',
+                'playing': '游戏中', 
+                'finished': '已结束'
+            }[room.game_status] || room.game_status;
+            
+            // 格式化房间状态
+            const roomStatusText = room.is_active ? '活跃' : '已关闭';
+            const roomStatusClass = room.is_active ? 'status-active' : 'status-inactive';
+            
+            let infoHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h4>基本信息</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div><strong>房间ID:</strong> ${room.id}</div>
+                        <div><strong>房间名称:</strong> ${room.name}</div>
+                        <div><strong>创建者:</strong> ${room.creator}</div>
+                        <div><strong>最大玩家数:</strong> ${room.max_players}</div>
+                        <div><strong>当前玩家:</strong> ${room.member_count}</div>
+                        <div><strong>游戏状态:</strong> <span class="status-badge ${room.game_status === 'waiting' ? 'status-active' : room.game_status === 'playing' ? 'status-active' : 'status-inactive'}">${gameStatusText}</span></div>
+                        <div><strong>房间状态:</strong> <span class="status-badge ${roomStatusClass}">${roomStatusText}</span></div>
+                        <div><strong>创建时间:</strong> ${new Date(room.created_at).toLocaleString()}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong>房间描述:</strong>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 5px;">
+                            ${room.description || '无描述'}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong>联机标识码:</strong>
+                        <div style="background: #e9ecef; padding: 10px; border-radius: 4px; margin-top: 5px; font-family: monospace; word-break: break-all; display: flex; justify-content: space-between; align-items: center;">
+                            <span>${room.server_address}</span>
+                            <button class="btn btn-secondary btn-sm" onclick="copyRoomAddress('${room.server_address}')" style="font-size: 0.8rem;">复制</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4>房间成员 (${members.length}/${room.max_players})</h4>
+            `;
+            
+            if (!members || members.length === 0) {
+                infoHTML += '<p style="text-align: center; padding: 20px;">该房间暂无成员</p>';
+            } else {
+                infoHTML += '<div class="member-list">';
+                
+                members.forEach(member => {
+                    const isCreator = member.id === room.creator_id;
+                    const readyStatus = member.is_ready ? 
+                        '<span class="status-ready">已准备</span>' : 
+                        '<span class="status-not-ready">未准备</span>';
+                    
+                    infoHTML += `
+                        <div class="member-item">
+                            <div class="member-info">
+                                <div class="member-name">
+                                    ${member.username} (ID: ${member.id})
+                                    ${isCreator ? '<span class="creator-badge">房主</span>' : ''}
+                                </div>
+                                ${member.profile ? `<div class="member-profile">${member.profile}</div>` : ''}
+                            </div>
+                            <div class="member-status">
+                                ${readyStatus}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                infoHTML += '</div>';
+            }
+            
+            infoHTML += '</div>';
+            roomInfoContent.innerHTML = infoHTML;
+        }
+
+        // 复制房间地址函数
+        function copyRoomAddress(address) {
+            copyToClipboard(address);
+            showNotification(roomsNotification, '联机标识码已复制到剪贴板', 'success');
+        }
+
+        // 复制到剪贴板函数
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showNotification(roomsNotification, '已复制到剪贴板', 'success');
+                }).catch(err => {
+                    fallbackCopyTextToClipboard(text);
+                });
+            } else {
+                fallbackCopyTextToClipboard(text);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.cssText = 'position:fixed;top:0;left:0;width:2em;height:2em;padding:0;border:none;outline:none;box-shadow:none;background:transparent;opacity:0;';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) {
+                    showNotification(roomsNotification, '已复制到剪贴板', 'success');
+                }
+            } catch (err) {
+                document.body.removeChild(textArea);
+                // 如果复制失败，不显示错误，因为用户可能已经手动复制
+            }
+        }
+
+        // 关闭房间信息模态框
+        function closeRoomInfoModal() {
+            roomInfoModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        
+        // 处理管理员登录
+        async function handleAdminLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                showNotification(authNotification, '请输入用户名和密码', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // 检查是否为管理员（这里简单检查用户名是否为admin）
+                    if (username !== 'admin') {
+                        showNotification(authNotification, '非管理员账户，无权访问控制台', 'error');
+                        return;
+                    }
+                    
+                    currentAdminToken = data.token;
+                    currentAdminUser = data.user;
+                    localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminUser', JSON.stringify(data.user));
+                    
+                    showNotification(authNotification, '登录成功！', 'success');
+                    setTimeout(() => {
+                        showAdminContent();
+                        loadStats();
+                        loadUsers();
+                    }, 1000);
+                } else {
+                    showNotification(authNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('管理员登录错误:', error);
+                showNotification(authNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        
+        // 处理管理员退出
+        function handleAdminLogout() {
+            currentAdminToken = null;
+            currentAdminUser = null;
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            showAuthPanel();
+        }
+        
+        // 加载统计信息
+        async function loadStats() {
+            statsLoading.classList.remove('hidden');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayStats(data);
+                } else {
+                    console.error('获取统计信息失败:', data.message);
+                }
+            } catch (error) {
+                console.error('加载统计信息错误:', error);
+            } finally {
+                statsLoading.classList.add('hidden');
+            }
+        }
+        
+        // 显示统计信息
+        function displayStats(stats) {
+            statsContent.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.user_stats.total_users}</div>
+                    <div class="stat-label">总用户数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.user_stats.today_users}</div>
+                    <div class="stat-label">今日新增</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.user_stats.today_active_users || 0}</div>
+                    <div class="stat-label">今日活跃</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.user_stats.recent_active_users || 0}</div>
+                    <div class="stat-label">7日活跃</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.room_stats.active_rooms}</div>
+                    <div class="stat-label">活跃房间</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.room_stats.total_memberships}</div>
+                    <div class="stat-label">总参与数</div>
+                </div>
+            `;
+        }        
+        
+        // 加载用户列表
+        async function loadUsers() {
+            usersLoading.classList.remove('hidden');
+            usersTableBody.innerHTML = '';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayUsers(data.users);
+                } else {
+                    showNotification(usersNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('加载用户列表错误:', error);
+                showNotification(usersNotification, '网络错误，请稍后重试', 'error');
+            } finally {
+                usersLoading.classList.add('hidden');
+            }
+        }
+        
+        // 显示用户列表
+        function displayUsers(users) {
+            usersTableBody.innerHTML = '';
+            
+            if (users.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无用户数据</td></tr>';
+                return;
+            }
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // 格式化上次登录时间
+                let lastLoginText = '从未登录';
+                if (user.last_login_at) {
+                    const lastLoginDate = new Date(user.last_login_at);
+                    lastLoginText = lastLoginDate.toLocaleString();
+                }
+                
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${new Date(user.created_at).toLocaleString()}</td>
+                    <td>${lastLoginText}</td>
+                    <td>
+                        <button class="action-btn btn-danger delete-avatar-btn" data-user-id="${user.id}">dab</button>
+                        <button class="action-btn btn-danger delete-user-btn" data-user-id="${user.id}">删除</button>
+                    </td>
+                `;
+                
+                usersTableBody.appendChild(row);
+            });
+            
+            // 绑定删除用户事件
+            document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    deleteUser(userId);
+                });
+            });
+            
+            // 绑定删除头像事件
+            document.querySelectorAll('.delete-avatar-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    deleteUserAvatar(userId);
+                });
+            });
+
+        }
+        // 删除用户头像
+        async function deleteUserAvatar(userId) {
+            if (!confirm('确定要删除这个用户的头像吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/delete_avatar/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(usersNotification, data.message, 'success');
+                    loadUsers(); // 刷新用户列表
+                } else {
+                    showNotification(usersNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('删除用户头像错误:', error);
+                showNotification(usersNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除这个用户吗？此操作将删除该用户创建的所有房间，且不可恢复！')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(usersNotification, data.message, 'success');
+                    loadUsers(); // 刷新用户列表
+                    loadStats(); // 刷新统计信息
+                } else {
+                    showNotification(usersNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('删除用户错误:', error);
+                showNotification(usersNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        
+        function handleRoomManagementFilterChange() {
+            currentRoomStatusFilter = roomManagementStatusFilter.value;
+            currentGameStatusFilter = roomGameStatusFilter.value;
+            currentCreatorFilter = roomCreatorFilter.value;
+            currentRoomSearch = roomSearchInput.value.trim();
+            
+            applyRoomFilters();
+        }
+        
+        function clearRoomManagementFilters() {
+            roomManagementStatusFilter.value = 'all';
+            roomGameStatusFilter.value = 'all';
+            roomCreatorFilter.value = 'all';
+            roomSearchInput.value = '';
+            
+            currentRoomStatusFilter = 'all';
+            currentGameStatusFilter = 'all';
+            currentCreatorFilter = 'all';
+            currentRoomSearch = '';
+            
+            applyRoomFilters();
+        }
+
+        // 加载房间列表
+        async function loadRooms() {
+            roomsLoading.classList.remove('hidden');
+            roomsTableBody.innerHTML = '';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/rooms`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // 保存所有房间数据
+                    allRoomsData = data.rooms;
+                    
+                    // 更新创建者过滤选项
+                    updateCreatorFilter(allRoomsData);
+                    
+                    // 更新统计信息
+                    updateRoomStats(allRoomsData);
+                    
+                    // 应用当前过滤条件
+                    applyRoomFilters();
+                } else {
+                    showNotification(roomsNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('加载房间列表错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+            } finally {
+                roomsLoading.classList.add('hidden');
+            }
+        }
+
+        function applyRoomFilters() {
+            if (!allRoomsData || allRoomsData.length === 0) {
+                console.warn('没有房间数据可过滤');
+                return;
+            }
+            
+            filteredRoomsData = allRoomsData.filter(room => {
+                // 房间状态过滤 (活跃/非活跃)
+                if (currentRoomStatusFilter === 'active' && !room.is_active) return false;
+                if (currentRoomStatusFilter === 'inactive' && room.is_active) return false;
+                
+                // 游戏状态过滤
+                if (currentGameStatusFilter !== 'all') {
+                    // 处理已关闭房间的特殊情况
+                    if (!room.is_active) {
+                        // 如果房间已关闭，只有在选择"已结束"时才显示
+                        if (currentGameStatusFilter !== 'finished') return false;
+                    } else {
+                        // 活跃房间根据游戏状态过滤
+                        if (room.game_status !== currentGameStatusFilter) return false;
+                    }
+                }
+                
+                // 创建者过滤
+                if (currentCreatorFilter !== 'all' && room.creator !== currentCreatorFilter) return false;
+                
+                // 搜索过滤
+                if (currentRoomSearch) {
+                    const searchLower = currentRoomSearch.toLowerCase();
+                    const roomName = room.name ? room.name.toLowerCase() : '';
+                    const creator = room.creator ? room.creator.toLowerCase() : '';
+                    const serverAddress = room.server_address ? room.server_address.toLowerCase() : '';
+                    
+                    if (!roomName.includes(searchLower) && 
+                        !creator.includes(searchLower) && 
+                        !serverAddress.includes(searchLower)) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            // 显示过滤后的房间
+            displayRooms(filteredRoomsData);
+            
+            // 更新过滤信息
+            updateFilteredInfo();
+        }
+        
+        // 更新创建者过滤选项
+        function updateCreatorFilter(rooms) {
+            // 获取所有唯一的创建者
+            const creators = [...new Set(rooms.map(room => room.creator))].sort();
+            
+            // 保存当前选中的值
+            const currentValue = roomCreatorFilter.value;
+            
+            // 清空现有选项
+            roomCreatorFilter.innerHTML = '<option value="all">全部创建者</option>';
+            
+            // 添加创建者选项
+            creators.forEach(creator => {
+                const option = document.createElement('option');
+                option.value = creator;
+                option.textContent = creator;
+                roomCreatorFilter.appendChild(option);
+            });
+            
+            // 恢复之前选中的值
+            if (currentValue && creators.includes(currentValue)) {
+                roomCreatorFilter.value = currentValue;
+            }
+        }
+
+        // 更新房间统计信息
+        function updateRoomStats(rooms) {
+            const total = rooms.length;
+            const active = rooms.filter(room => room.is_active).length;
+            const inactive = total - active;
+            
+            totalRoomsCount.textContent = total;
+            activeRoomsCount.textContent = `${active} 活跃`;
+            inactiveRoomsCount.textContent = `${inactive} 已关闭`;
+        }
+
+        // 更新过滤信息
+        function updateFilteredInfo() {
+            const total = allRoomsData.length;
+            const filtered = filteredRoomsData.length;
+            
+            if (filtered === total) {
+                filteredRoomsInfo.textContent = '';
+            } else {
+                filteredRoomsInfo.textContent = `(已过滤: 显示 ${filtered}/${total} 个房间)`;
+            }
+        }
+
+        // 处理房间过滤器变化
+        function handleRoomFilterChange() {
+            currentRoomStatusFilter = roomStatusFilter.value;
+            currentGameStatusFilter = roomGameStatusFilter.value;
+            currentCreatorFilter = roomCreatorFilter.value;
+            currentRoomSearch = roomSearchInput.value.trim();
+            
+            applyRoomFilters();
+        }
+
+        // 清除所有过滤器
+        function clearRoomFilters() {
+            roomStatusFilter.value = 'all';
+            roomGameStatusFilter.value = 'all';
+            roomCreatorFilter.value = 'all';
+            roomSearchInput.value = '';
+            
+            currentRoomStatusFilter = 'all';
+            currentGameStatusFilter = 'all';
+            currentCreatorFilter = 'all';
+            currentRoomSearch = '';
+            
+            applyRoomFilters();
+        }
+
+        // 修改 displayRooms 函数，在操作列添加信息按钮
+        function displayRooms(rooms) {
+            roomsTableBody.innerHTML = '';
+            
+            if (rooms.length === 0) {
+                roomsTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">未找到匹配的房间</td></tr>';
+                return;
+            }
+            
+            rooms.forEach(room => {
+                const row = document.createElement('tr');
+                
+                // 房间状态显示逻辑
+                let statusClass, statusText;
+                
+                if (!room.is_active) {
+                    statusClass = 'status-inactive';
+                    statusText = '已关闭';
+                    row.classList.add('inactive-room-row');
+                } else {
+                    switch(room.game_status) {
+                        case 'waiting':
+                            statusClass = 'status-active';
+                            statusText = '等待中';
+                            break;
+                        case 'playing':
+                            statusClass = 'status-active';
+                            statusText = '游戏中';
+                            break;
+                        case 'finished':
+                            statusClass = 'status-inactive';
+                            statusText = '已结束';
+                            break;
+                        default:
+                            statusClass = 'status-active';
+                            statusText = '等待中';
+                    }
+                }
+                
+                row.innerHTML = `
+                    <td>${room.id}</td>
+                    <td>${room.name}</td>
+                    <td>${room.creator}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${room.member_count}/${room.max_players}</td>
+                    <td>${new Date(room.created_at).toLocaleString()}</td>
+                    <td>
+                        <select class="status-select" data-room-id="${room.id}">
+                            <option value="waiting" ${room.game_status === 'waiting' ? 'selected' : ''}>等待中</option>
+                            <option value="playing" ${room.game_status === 'playing' ? 'selected' : ''}>游戏中</option>
+                            <option value="finished" ${room.game_status === 'finished' ? 'selected' : ''}>已结束</option>
+                        </select>
+                        <button class="action-btn btn-primary update-status-btn" data-room-id="${room.id}">更新</button>
+                    </td>
+                    <td>
+                        <button class="action-btn btn-secondary room-info-btn" data-room-id="${room.id}" title="查看房间信息">
+                            信息
+                        </button>
+                        ${room.is_active ? 
+                            `<button class="action-btn btn-warning soft-delete-btn" data-room-id="${room.id}" title="关闭房间">关闭</button>` :
+                            `<button class="action-btn btn-success restore-btn" data-room-id="${room.id}" title="恢复房间">恢复</button>`
+                        }
+                        <button class="action-btn btn-danger delete-room-btn" data-room-id="${room.id}">删除</button>
+                    </td>
+                `;
+                
+                roomsTableBody.appendChild(row);
+            });
+            
+            // 绑定删除房间事件
+            document.querySelectorAll('.delete-room-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const roomId = this.getAttribute('data-room-id');
+                    deleteRoom(roomId);
+                });
+            });
+            
+            // 绑定更新状态事件
+            document.querySelectorAll('.update-status-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const roomId = this.getAttribute('data-room-id');
+                    const statusSelect = document.querySelector(`.status-select[data-room-id="${roomId}"]`);
+                    const newStatus = statusSelect.value;
+                    updateRoomStatus(roomId, newStatus);
+                });
+            });
+            
+            // 绑定房间信息事件（替换原来的查看成员事件）
+            document.querySelectorAll('.room-info-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const roomId = this.getAttribute('data-room-id');
+                    showRoomInfo(roomId);
+                });
+            });
+            
+            // 绑定软删除事件
+            document.querySelectorAll('.soft-delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const roomId = this.getAttribute('data-room-id');
+                    softDeleteRoom(roomId);
+                });
+            });
+            
+            // 绑定恢复事件
+            document.querySelectorAll('.restore-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const roomId = this.getAttribute('data-room-id');
+                    restoreRoom(roomId);
+                });
+            });
+        }
+
+        // 辅助函数：截断长文本
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        async function updateRoomStatus(roomId, newStatus) {
+            if (!confirm(`确定要将房间状态更新为"${getStatusText(newStatus)}"吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/rooms/${roomId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    },
+                    body: JSON.stringify({ game_status: newStatus })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(roomsNotification, data.message, 'success');
+                    // 刷新房间列表以显示更新后的状态
+                    loadRooms();
+                } else {
+                    showNotification(roomsNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('更新房间状态错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'waiting': '等待中',
+                'playing': '游戏中',
+                'finished': '已结束'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // 删除房间
+        async function deleteRoom(roomId) {
+            if (!confirm('确定要删除这个房间吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/rooms/${roomId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(roomsNotification, data.message, 'success');
+                    loadRooms(); // 刷新房间列表
+                    loadStats(); // 刷新统计信息
+                } else {
+                    showNotification(roomsNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('删除房间错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        
+        // 软删除房间
+        async function softDeleteRoom(roomId) {
+            if (!confirm('确定要关闭这个房间吗？房间关闭后用户将无法加入，但数据会保留。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/rooms/${roomId}/soft-delete`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(roomsNotification, data.message, 'success');
+                    loadRooms(); // 刷新房间列表
+                    loadStats(); // 刷新统计信息
+                } else {
+                    showNotification(roomsNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('关闭房间错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 恢复房间
+        async function restoreRoom(roomId) {
+            if (!confirm('确定要恢复这个房间吗？房间将重新变为活跃状态。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/rooms/${roomId}/restore`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(roomsNotification, data.message, 'success');
+                    loadRooms(); // 刷新房间列表
+                    loadStats(); // 刷新统计信息
+                } else {
+                    showNotification(roomsNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('恢复房间错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        
+        // 加载系统日志
+        async function loadLogs() {
+            logsLoading.classList.remove('hidden');
+            logsContent.innerHTML = '';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/logs`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayLogs(data.logs);
+                } else {
+                    showNotification(logsNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('加载日志错误:', error);
+                showNotification(logsNotification, '网络错误，请稍后重试', 'error');
+            } finally {
+                logsLoading.classList.add('hidden');
+            }
+        }
+        
+        // 显示系统日志
+        function displayLogs(logs) {
+            logsContent.innerHTML = '';
+            
+            if (logs.length === 0) {
+                logsContent.innerHTML = '<div class="log-entry">暂无日志数据</div>';
+                return;
+            }
+            
+            logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                
+                const levelClass = `log-level-${log.level.toLowerCase()}`;
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                
+                logEntry.innerHTML = `
+                    <span class="${levelClass}">[${log.level}]</span>
+                    <span>${timestamp}</span>
+                    <span>${log.message}</span>
+                `;
+                
+                logsContent.appendChild(logEntry);
+            });
+        }
+        
+        // 房间状态过滤改变处理
+        function handleRoomStatusFilterChange() {
+            currentRoomStatusFilter = this.value;
+            updateRoomFilterOptions();
+            currentChatPage = 1;
+            loadChatMessages();
+        }
+
+        // 更新房间过滤选项，根据状态过滤
+        function updateRoomFilterOptions() {
+            // 安全检查：确保 chatMessagesData 和 rooms 存在
+            if (!chatMessagesData || !chatMessagesData.rooms) {
+                console.warn('chatMessagesData or rooms is not available, skipping room filter update');
+                return;
+            }
+
+            const roomStatusFilter = document.getElementById('room-status-filter');
+            if (!roomStatusFilter) {
+                console.warn('room-status-filter element not found');
+                return;
+            }
+            
+            const currentValue = roomFilter.value;
+            
+            // 清空现有选项
+            roomFilter.innerHTML = '<option value="">所有房间</option>';
+            
+            // 根据状态过滤房间
+            const filteredRooms = chatMessagesData.rooms.filter(room => {
+                if (currentRoomStatusFilter === 'active') return room.is_active;
+                if (currentRoomStatusFilter === 'inactive') return !room.is_active;
+                return true; // 'all' 显示所有
+            });
+            
+            // 添加过滤后的房间选项
+            filteredRooms.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room.id;
+                
+                let statusText = room.is_active ? '✅' : '❌';
+                option.textContent = `${statusText} ${room.name} (ID: ${room.id}, 创建者: ${room.creator})`;
+                
+                if (!room.is_active) {
+                    option.style.color = '#999';
+                    option.style.fontStyle = 'italic';
+                }
+                
+                roomFilter.appendChild(option);
+            });
+            
+            // 恢复之前选中的值（如果该值在过滤后仍然存在）
+            if (currentValue) {
+                roomFilter.value = currentValue;
+            }
+        }
+
+        function switchTab(tabId) {
+            // 更新标签按钮状态
+            tabBtns.forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // 更新标签内容状态
+            tabContents.forEach(content => {
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            // 加载对应标签的数据
+            if (tabId === 'users') {
+                loadUsers();
+            } else if (tabId === 'rooms') {
+                loadRooms();
+            } else if (tabId === 'chat-messages') {
+                loadChatMessages();
+            } else if (tabId === 'logs') {
+                loadLogs();
+            } else if (tabId === 'system-messages') {
+                loadRecentSystemMessages();
+            }
+        }
+
+        // 加载聊天记录
+        async function loadChatMessages() {
+            chatMessagesLoading.classList.remove('hidden');
+            chatMessagesTableBody.innerHTML = '';
+            
+            try {
+                // 构建查询参数
+                const params = new URLSearchParams({
+                    page: currentChatPage,
+                    per_page: currentChatPerPage
+                });
+                
+                if (currentRoomFilter) {
+                    params.append('room_id', currentRoomFilter);
+                }
+                
+                const response = await fetch(`${API_BASE_URL}/admin/chat-messages?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    chatMessagesData = data;
+                    displayChatMessages(data.messages);
+                    updateChatPagination(data.pagination);
+                    updateRoomFilter(data.rooms);
+                    updateStatsInfo(data);
+                } else {
+                    showNotification(chatMessagesNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('加载聊天记录错误:', error);
+                showNotification(chatMessagesNotification, '网络错误，请稍后重试', 'error');
+            } finally {
+                chatMessagesLoading.classList.add('hidden');
+            }
+        }
+        
+        function updateRoomFilter(rooms) {
+            // 保存当前选中的值
+            const currentValue = roomFilter.value;
+            
+            // 更新房间状态过滤选项
+            updateRoomFilterOptions();
+            
+            // 恢复之前选中的值
+            roomFilter.value = currentValue;
+        }
+
+        function updateStatsInfo(data) {
+            totalMessagesCount.textContent = data.pagination.total;
+            
+            // 统计活跃和非活跃房间数量
+            const activeRooms = data.rooms.filter(room => room.is_active).length;
+            const inactiveRooms = data.rooms.filter(room => !room.is_active).length;
+            
+            if (currentRoomFilter) {
+                const selectedRoom = data.rooms.find(room => room.id == currentRoomFilter);
+                const roomStatus = selectedRoom ? (selectedRoom.is_active ? '活跃' : '已关闭') : '未知';
+                filteredInfo.textContent = `当前过滤: ${selectedRoom?.name || '未知房间'} (${roomStatus})`;
+            } else {
+                filteredInfo.textContent = `共 ${data.rooms.length} 个房间 (${activeRooms} 活跃, ${inactiveRooms} 已关闭)`;
+            }
+        }
+
+        function handleRoomFilterChange() {
+            currentRoomFilter = roomFilter.value;
+            currentChatPage = 1; // 重置到第一页
+            loadChatMessages();
+        }
+
+        // 每页显示数量改变处理
+        function handlePerPageChange() {
+            currentChatPerPage = parseInt(messagesPerPage.value);
+            currentChatPage = 1; // 重置到第一页
+            loadChatMessages();
+        }
+
+        // 清除过滤
+        function clearChatFilters() {
+            roomFilter.value = '';
+            messagesPerPage.value = '50';
+            currentRoomFilter = '';
+            currentChatPerPage = 50;
+            currentChatPage = 1;
+            loadChatMessages();
+        }
+
+        // 上一页
+        function goToPrevPage() {
+            if (currentChatPage > 1) {
+                currentChatPage--;
+                loadChatMessages();
+            }
+        }
+
+        // 下一页
+        function goToNextPage() {
+            if (chatMessagesData && currentChatPage < chatMessagesData.pagination.pages) {
+                currentChatPage++;
+                loadChatMessages();
+            }
+        }
+
+        // 处理发送范围变化
+        function handleTargetChange() {
+            const target = systemMessageTarget.value;
+            if (target === 'specific') {
+                specificRoomContainer.classList.remove('hidden');
+            } else {
+                specificRoomContainer.classList.add('hidden');
+            }
+        }
+
+        // 发送系统消息
+        async function sendSystemMessage() {
+            const content = systemMessageContent.value.trim();
+            const messageType = systemMessageType.value;
+            const target = systemMessageTarget.value;
+            const specificRoomIdValue = specificRoomId.value;
+            
+            if (!content) {
+                showNotification(systemMessagesNotification, '请输入消息内容！', 'error');
+                return;
+            }
+            
+            if (target === 'specific' && !specificRoomIdValue) {
+                showNotification(systemMessagesNotification, '请指定房间ID！', 'error');
+                return;
+            }
+            
+            if (!confirm('确定要发送这条系统消息吗？此操作将向选定房间的所有用户显示消息。')) {
+                return;
+            }
+            
+            try {
+                sendSystemMessageBtn.disabled = true;
+                sendSystemMessageBtn.textContent = '发送中...';
+                
+                const requestBody = {
+                    content: content,
+                    message_type: messageType,
+                    target: target
+                };
+                
+                if (target === 'specific' && specificRoomIdValue) {
+                    requestBody.specific_room_id = parseInt(specificRoomIdValue);
+                }
+                
+                const response = await fetch(`${API_BASE_URL}/admin/system-messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(systemMessagesNotification, data.message, 'success');
+                    // 清空表单
+                    systemMessageContent.value = '';
+                    // 刷新最近消息列表
+                    loadRecentSystemMessages();
+                } else {
+                    showNotification(systemMessagesNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('发送系统消息错误:', error);
+                showNotification(systemMessagesNotification, '网络错误，请稍后重试', 'error');
+            } finally {
+                sendSystemMessageBtn.disabled = false;
+                sendSystemMessageBtn.textContent = '发送系统消息';
+            }
+        }
+
+        // 预览系统消息
+        function previewSystemMessage() {
+            const content = systemMessageContent.value.trim();
+            const messageType = systemMessageType.value;
+            
+            if (!content) {
+                showNotification(systemMessagesNotification, '请输入消息内容！', 'error');
+                return;
+            }
+            
+            let previewContent = content;
+            if (messageType === 'maintenance') {
+                previewContent = `🔧 系统维护: ${content}`;
+            } else if (messageType === 'update') {
+                previewContent = `🔄 系统更新: ${content}`;
+            } else if (messageType === 'emergency') {
+                previewContent = `🚨 紧急通知: ${content}`;
+            } else if (messageType === 'announcement') {
+                previewContent = `📢 系统公告: ${content}`;
+            }
+            
+            alert(`消息预览:\n\n${previewContent}`);
+        }
+
+        // 加载消息模板
+        function loadMessageTemplate(template) {
+            let content = '';
+            
+            switch (template) {
+                case 'maintenance':
+                    content = '系统将于 [时间] 进行维护，预计耗时 [时长]。维护期间服务可能暂时不可用，请提前做好准备。';
+                    systemMessageType.value = 'maintenance';
+                    break;
+                case 'update':
+                    content = '新版本 [版本号] 已发布，主要更新内容包括：[更新内容]。建议及时更新以获得更好的体验。';
+                    systemMessageType.value = 'update';
+                    break;
+                case 'emergency':
+                    content = '由于 [原因]，系统可能出现不稳定的情况。技术团队正在紧急处理中，请稍安勿躁。';
+                    systemMessageType.value = 'emergency';
+                    break;
+            }
+            
+            systemMessageContent.value = content;
+        }
+
+        // 加载最近发送的系统消息
+        async function loadRecentSystemMessages() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/system-messages`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    recentSystemMessages = data.recent_messages;
+                    displayRecentSystemMessages();
+                } else {
+                    console.error('获取最近系统消息失败:', data.message);
+                }
+            } catch (error) {
+                console.error('加载最近系统消息错误:', error);
+            }
+        }
+
+        // 显示最近发送的系统消息
+        function displayRecentSystemMessages() {
+            if (!recentSystemMessagesContainer) return;
+            
+            if (!recentSystemMessages || recentSystemMessages.length === 0) {
+                recentSystemMessagesContainer.innerHTML = '<p>暂无最近发送的系统消息</p>';
+                return;
+            }
+            
+            let html = '<div class="recent-messages-list">';
+            
+            recentSystemMessages.forEach(msg => {
+                const sentTime = new Date(msg.sent_at).toLocaleString();
+                const typeText = getMessageTypeText(msg.message_type);
+                
+                html += `
+                    <div class="recent-message-item" style="border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>${typeText}</strong>
+                            <span style="font-size: 0.8rem; color: #666;">${sentTime}</span>
+                        </div>
+                        <p style="margin: 5px 0;">${msg.content}</p>
+                        <div style="font-size: 0.8rem; color: #666;">
+                            发送范围: ${getTargetText(msg.target)} | 
+                            成功: ${msg.success_count} | 失败: ${msg.failed_count}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            recentSystemMessagesContainer.innerHTML = html;
+        }
+
+        // 获取消息类型文本
+        function getMessageTypeText(type) {
+            const typeMap = {
+                'announcement': '公告通知',
+                'maintenance': '维护通知',
+                'update': '更新通知',
+                'emergency': '紧急通知',
+                'custom': '自定义消息'
+            };
+            return typeMap[type] || type;
+        }
+
+        // 获取发送范围文本
+        function getTargetText(target) {
+            const targetMap = {
+                'all': '所有房间',
+                'active': '活跃房间',
+                'specific': '指定房间'
+            };
+            return targetMap[target] || target;
+        }
+
+        // 删除聊天消息
+        async function deleteChatMessage(messageId) {
+            if (!confirm('确定要删除这条聊天消息吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/chat-messages/${messageId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${currentAdminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification(chatMessagesNotification, data.message, 'success');
+                    // 重新加载消息列表
+                    loadChatMessages();
+                } else {
+                    showNotification(chatMessagesNotification, data.message, 'error');
+                }
+            } catch (error) {
+                console.error('删除聊天消息错误:', error);
+                showNotification(chatMessagesNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        // 更新分页信息
+        function updateChatPagination(pagination) {
+            pageInfo.textContent = `第 ${pagination.page} 页，共 ${pagination.pages} 页`;
+            
+            // 更新按钮状态
+            prevPageBtn.disabled = pagination.page <= 1;
+            nextPageBtn.disabled = pagination.page >= pagination.pages;
+        }
+
+        // 显示聊天记录
+        function displayChatMessages(messages) {
+            chatMessagesTableBody.innerHTML = '';
+            
+            if (messages.length === 0) {
+                chatMessagesTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">暂无聊天记录</td></tr>';
+                return;
+            }
+            
+            messages.forEach(message => {
+                const row = document.createElement('tr');
+                
+                // 消息类型样式
+                const typeBadge = message.message_type === 'system' ? 
+                    '<span class="status-badge status-inactive">系统</span>' : 
+                    '<span class="status-badge status-active">用户</span>';
+                
+                // 截断过长的消息内容
+                const contentPreview = message.content.length > 100 ? 
+                    message.content.substring(0, 100) + '...' : 
+                    message.content;
+                
+                row.innerHTML = `
+                    <td>${message.id}</td>
+                    <td>
+                        ${message.room_id}
+                        ${!chatMessagesData.rooms.find(r => r.id === message.room_id)?.is_active ? 
+                          '<span style="color: #999; margin-left: 5px;" title="房间已关闭">❌</span>' : ''}
+                    </td>
+                    <td>${message.username}</td>
+                    <td>${typeBadge}</td>
+                    <td title="${message.content}">${contentPreview}</td>
+                    <td>${new Date(message.created_at).toLocaleString()}</td>
+                    <td>
+                        <button class="action-btn btn-danger delete-chat-message-btn" data-message-id="${message.id}">删除</button>
+                    </td>
+                `;
+                
+                // 如果房间已关闭，整行变灰
+                const room = chatMessagesData.rooms.find(r => r.id === message.room_id);
+                if (room && !room.is_active) {
+                    row.style.backgroundColor = '#f8f9fa';
+                    row.style.color = '#6c757d';
+                }
+                
+                chatMessagesTableBody.appendChild(row);
+            });
+            
+            // 绑定删除消息事件
+            document.querySelectorAll('.delete-chat-message-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const messageId = this.getAttribute('data-message-id');
+                    deleteChatMessage(messageId);
+                });
+            });
+        }
+
+        // 刷新所有数据
+        function refreshAllData() {
+            loadStats();
+            
+            // 刷新当前活动标签的数据
+            const activeTab = document.querySelector('.tab-btn.active');
+            if (!activeTab) {
+                console.warn('No active tab found');
+                return;
+            }
+            const tabType = activeTab.getAttribute('data-tab');
+            if (tabType === 'users') {
+                loadUsers();
+            } else if (tabType === 'rooms') {
+                loadRooms();
+            } else if (tabType === 'logs') {
+                loadLogs();
+            } else if (tabType === 'system-messages') {
+                loadRecentSystemMessages();
+            }
+            
+            showNotification(usersNotification, '数据已刷新', 'success');
+        }
+        
+        // 导出数据（简化版）
+        function exportData() {
+            // 在实际应用中，这里应该从服务器获取完整数据并导出
+            alert('导出数据功能将在完整版中实现');
+        }
+    </script>
+</body>
+</html>

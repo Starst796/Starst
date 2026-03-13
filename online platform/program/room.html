@@ -1,0 +1,3664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- flask-socketio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starst联机系统 - 房间</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <script src="header-component.js" defer></script>
+    <style>
+        /* 页面布局容器 */
+        .page-container {
+            min-height: calc(100vh - 120px);
+        }
+        
+        /* 房间列表页面 */
+        #room-list-page {
+            display: block;
+        }
+        
+        #room-list-page.hidden {
+            display: none;
+        }
+        
+        /* 房间详情页面 */
+        #room-detail-page {
+            display: none;
+        }
+        
+        #room-detail-page.active {
+            display: block;
+        }
+        
+        /* 房间列表页面布局 */
+        .room-list-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .room-list-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 房间详情页面布局 */
+        .room-detail-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            min-height: calc(100vh - 200px);
+        }
+        
+        @media (max-width: 1200px) {
+            .room-detail-layout {
+                grid-template-columns: 1fr;
+                min-height: auto;
+            }
+        }
+        
+        /* 创建房间表单 */
+        .room-type-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .room-type-option {
+            flex: 1;
+        }
+        
+        .room-type-radio {
+            display: none;
+        }
+        
+        .room-type-label {
+            display: block;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .room-type-radio:checked + .room-type-label {
+            border-color: var(--front-color);
+            background-color: rgba(74, 111, 165, 0.2);
+            color: var(--front-color);
+            font-weight: bold;
+        }
+        
+        .room-type-label:hover {
+            border-color: var(--front-color);
+        }
+        
+        #password-group {
+            margin-top: 10px;
+        }
+        
+        /* 房间信息面板 */
+        .room-info-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .room-info-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .room-basic-info {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--front-color);
+        }
+        
+        .room-status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .status-waiting {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .status-playing {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+        
+        .status-finished {
+            background-color: rgba(149, 165, 166, 0.2);
+            color: var(--gray-color);
+        }
+        
+        .room-address {
+            background-color: var(--panel-color);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 3px solid var(--secondary-color);
+            min-height: 100px;
+        }
+        
+        .room-address.editable {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .room-address.editable:hover {
+            background-color: #e9ecef;
+        }
+        
+        .edit-address-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            background-color: var(--panel-color);
+            color: var(--front-color);
+            border: 2px solid var(--shadow-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        
+        .address-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .copy-address-btn {
+            background: none;
+            border: 1px solid var(--front-color);
+            color: var(--front-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-address-btn:hover {
+            background-color: rgba(74, 111, 165, 0.1);
+        }
+        
+        /* 成员列表 */
+        .members-panel {
+            margin-top: 20px;
+        }
+        
+        .members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .member-card {
+            background: var(--panel-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--secondary-color);
+            transition: transform 0.2s ease;
+        }
+        
+        .member-card.creator {
+            border-left-color: var(--accent-color);
+        }
+        
+        .member-card.ready {
+            border-left-color: var(--success-color);
+        }
+        
+        .member-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        
+        .member-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+        
+        .member-info {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        .member-status {
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+        
+        .member-profile {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .member-tags {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+            align-items: center;
+        }
+        
+        .member-tag {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .kick-member-btn {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--error-color, #e74c3c);
+            border: none;
+            cursor: pointer;
+            margin-left: 2px;
+            transition: background 0.2s;
+        }
+        .kick-member-btn:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+        
+        .tag-creator {
+            background-color: rgba(255, 126, 95, 0.2);
+            color: var(--accent-color);
+        }
+        
+        .tag-ready {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+        
+        .tag-not-ready {
+            background-color: rgba(149, 165, 166, 0.2);
+            color: var(--gray-color);
+        }
+        
+        .tag-online {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+
+        .tag-offline {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--error-color);
+        }
+        
+        /* 房间操作按钮 */
+        .room-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--front-color);
+            flex-wrap: wrap;
+        }
+        
+        .action-group {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .room-type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-public {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+        .status-private {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--error-color);
+        }
+
+        /* 聊天面板 */
+        .chat-panel {
+            background: var(--panel-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(var(--shadow-color),0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 600px;
+            max-height: 600px;
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--front-color);
+            background-color: var(--panel-color);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .chat-header h3 {
+            margin: 0;
+            color: var(--front-color);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: var(--panel-color);
+        }
+        
+        .new-message-notification {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 15px;
+            text-align: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 0 15px 10px 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .new-message-notification:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-1px);
+        }
+        
+        .new-message-notification a {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        .new-message-notification a:hover {
+            color: #f0f0f0;
+        }
+        
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: var(--other-chat-color);
+            box-shadow: 0 1px 3px rgba(var(--shadow-color), 0.1);
+            border-left: 3px solid var(--secondary-color);
+        }
+        
+        .chat-message.system {
+            background-color: var(--system-chat-color);
+            border-left-color: var(--warning-color);
+            text-align: center;
+            font-style: italic;
+        }
+        
+        .chat-message.current-user {
+            background-color: var(--my-chat-color);
+            border-left-color: var(--accent-color);
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+        
+        .message-user {
+            font-weight: bold;
+            color: var(--shadow-color);
+        }
+        
+        .message-time {
+            color: var(--gray-color);
+        }
+        
+        .message-content {
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid var(--front-color);
+            background: var(--panel-color);
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .chat-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* 房间列表样式 */
+        .room-card {
+            background: var(--panel-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(var(--shadow-color), 0.1);
+            border-left: 4px solid var(--secondary-color);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .room-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(var(--shadow-color), 0.15);
+        }
+        
+        .room-card.user-in-room {
+            border-left-color: var(--success-color);
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .room-card.full {
+            border-left-color: var(--warning-color);
+            opacity: 0.7;
+        }
+        
+        .room-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .room-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--dark-color);
+        }
+        
+        .room-meta {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .room-tag {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            background-color: var(--background-color);
+            color: #666;
+        }
+        
+        .room-tag.private {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--error-color);
+        }
+        
+        .room-tag.public {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+        
+        .room-actions-small {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        /* 通用样式 */
+        .hidden {
+            display: none !important;
+        }
+        
+        .notification {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .notification.success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+        
+        .notification.error {
+            background-color: rgba(231, 76, 60, 0.2);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+        
+        .notification.warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            border: 1px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .search-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .search-filter .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .page-header h2 {
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #chat-messages::-webkit-scrollbar {
+            width: 8px;
+            background: var(--background-color); /* 滚动条轨道颜色 */
+        }
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: var(--secondary-color); /* 滚动条滑块颜色 */
+            border-radius: 4px;
+        }
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--front-color); /* 滑块悬停色 */
+        }
+        #global-bg-image {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        opacity: 1;
+    }
+    </style>
+    <script src="static/js/global-bg.js"></script>
+</head>
+<body>
+    <header-component></header-component>
+    
+    <div class="container page-container">
+        <!-- 房间列表页面 -->
+        <div id="room-list-page">
+            <div class="room-list-layout">
+                <!-- 左侧：创建房间 -->
+                <div class="panel">
+                    <div class="page-header">
+                        <h2>创建房间</h2>
+                    </div>
+                    
+                    <div id="create-room-notification" class="notification hidden"></div>
+                    
+                    <form id="createRoomForm">
+                        <div class="form-group">
+                            <label for="room-name">房间名称 *</label>
+                            <input type="text" id="room-name" class="form-control" required placeholder="输入房间名称" maxlength="50">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="room-description">房间描述</label>
+                            <textarea id="room-description" class="form-control" rows="3" placeholder="输入房间描述（可选）" maxlength="200"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>房间类型</label>
+                            <div class="room-type-options">
+                                <div class="room-type-option">
+                                    <input type="radio" id="room-type-public" name="room-type" value="public" class="room-type-radio" checked>
+                                    <label for="room-type-public" class="room-type-label">
+                                        <div>公开</div>
+                                        <small style="font-size: 0.8rem;">任何人可加入</small>
+                                    </label>
+                                </div>
+                                <div class="room-type-option">
+                                    <input type="radio" id="room-type-private" name="room-type" value="private" class="room-type-radio">
+                                    <label for="room-type-private" class="room-type-label">
+                                        <div>需密码</div>
+                                        <small style="font-size: 0.8rem;">需要密码加入</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group hidden" id="password-group">
+                            <label for="room-password">房间密码 *</label>
+                            <input type="password" id="room-password" class="form-control" placeholder="设置房间密码">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max-players">最大玩家数</label>
+                            <select id="max-players" class="form-control">
+                                <option value="2">2人</option>
+                                <option value="3">3人</option>
+                                <option value="4" selected>4人</option>
+                                <option value="5">5人</option>
+                                <option value="6">6人</option>
+                                <option value="7">7人</option>
+                                <option value="8">8人</option>
+                                <option value="9">9人</option>
+                                <option value="10">10人</option>
+                                <option value="11">11人</option>
+                                <option value="12">12人</option>
+                                <option value="13">13人</option>
+                                <option value="14">14人</option>
+                                <option value="15">15人</option>
+                                <option value="16">16人</option>
+                                <option value="17">17人</option>
+                                <option value="18">18人</option>
+                                <option value="19">19人</option>
+                                <option value="20">20人</option>
+                                <option value="21">21人</option>
+                                <option value="22">22人</option>
+                                <option value="23">23人</option>
+                                <option value="24">24人</option>
+                                <option value="25">25人</option>
+                                <option value="26">26人</option>
+                                <option value="27">27人</option>
+                                <option value="28">28人</option>
+                                <option value="29">29人</option>
+                                <option value="30">30人</option>
+                                <option value="31">31人</option>
+                                <option value="32">32人</option>
+                                <option value="33">33人</option>
+                                <option value="34">34人</option>
+                                <option value="35">35人</option>
+                                <option value="36">36人</option>
+                                <option value="37">37人</option>
+                                <option value="38">38人</option>
+                                <option value="39">39人</option>
+                                <option value="40">40人</option>
+                                <option value="41">41人</option>
+                                <option value="42">42人</option>
+                                <option value="43">43人</option>
+                                <option value="44">44人</option>
+                                <option value="45">45人</option>
+                                <option value="46">46人</option>
+                                <option value="47">47人</option>
+                                <option value="48">48人</option>
+                                <option value="49">49人</option>
+                                <option value="50">50人</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" id="create-room-btn" class="btn btn-accent">创建房间</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 右侧：房间列表 -->
+                <div class="panel">
+                    <div class="page-header">
+                        <h2>房间列表</h2>
+                        <div class="header-actions">
+                            <button id="back-to-room-btn" class="btn btn-secondary hidden">回到房间</button>
+                            <button id="refresh-rooms-btn" class="btn btn-secondary refresh-btn">
+                                <span>↻</span> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="rooms-notification" class="notification hidden"></div>
+                    
+                    <!-- 搜索和筛选 -->
+                    <div class="search-filter">
+                        <div class="form-group">
+                            <input type="text" id="room-search" class="form-control" placeholder="搜索房间...">
+                        </div>
+                        <div class="form-group" style="width: 150px;">
+                            <select id="room-status-filter" class="form-control">
+                                <option value="all">全部状态</option>
+                                <option value="waiting">等待中</option>
+                                <option value="playing">游戏中</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="width: 150px;">
+                            <select id="room-type-filter" class="form-control">
+                                <option value="all">全部类型</option>
+                                <option value="public">公开房间</option>
+                                <option value="private">密码房间</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="rooms-loading" class="loading hidden">
+                        <div class="spinner"></div>
+                        <p>加载房间列表...</p>
+                    </div>
+                    
+                    <div id="rooms-list">
+                        <!-- 房间卡片将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 房间详情页面 -->
+        <div id="room-detail-page">
+            <div class="room-detail-layout">
+                <!-- 左侧：房间信息 -->
+                <div class="room-info-panel">
+                    <div class="page-header">
+                        <h2 id="joined-room-name">房间名称</h2>
+                        <div class="header-actions">
+                            <button id="refresh-room-btn" class="btn btn-secondary refresh-btn">
+                                <span>↻</span> 刷新
+                            </button>
+                            <button id="back-to-list-btn" class="btn btn-secondary">返回房间列表</button>
+                        </div>
+                    </div>
+                    
+                    <div id="room-notification" class="notification hidden"></div>
+                    
+                    <div class="room-info-content">
+                        <!-- 房间基本信息 -->
+                        <div class="room-basic-info">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <h3 style="margin: 0; font-size: 1.3rem;">房间信息</h3>
+                                <span id="room-status-badge" class="room-status-badge status-waiting">等待中</span>
+                                <span id="room-type-badge" class="room-type-badge status-public">公开房间</span>
+                            </div>
+                            <p style="color: #666;">房主: <span id="room-creator" style="font-weight: bold;"></span></p>
+                            <p style="color: #666;">玩家: <span id="members-count">0</span>/<span id="max-players-display">4</span></p>
+                            <p style="color: #666;">房间描述：<span id="room-description-label"></span></p>
+                        </div>
+                        
+                        <!-- 房间内容 -->
+                        <div class="room-address-section">
+                            <div id="room-address-display" class="room-address">
+                                加载中...
+                            </div>
+                            <div id="room-address-edit" class="hidden">
+                                <textarea id="edit-address-input" class="edit-address-input" placeholder="输入房间内容..."></textarea>
+                                <div class="address-actions">
+                                    <button id="cancel-edit-btn" class="btn btn-secondary">取消</button>
+                                    <button id="save-address-btn" class="btn btn-accent">保存</button>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                                <button id="copy-address-btn" class="copy-address-btn">复制内容</button>
+                                <button id="edit-address-btn" class="copy-address-btn hidden">编辑内容</button>
+                                <button id="edit-roominfo-btn" class="copy-address-btn hidden">编辑信息</button>
+                                <button id="password-change-btn" class="copy-address-btn hidden">修改密码</button>
+                                <button id="password-delete-btn" class="copy-address-btn hidden">删除密码</button>
+                                <button id="password-add-btn" class="copy-address-btn hidden">添加密码</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 房间成员 -->
+                        <div class="members-panel">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h4>房间成员</h4>
+                                <small id="members-status">0人准备</small>
+                            </div>
+                            
+                            <div id="members-loading" class="loading hidden">
+                                <div class="spinner"></div>
+                                <p>加载成员列表...</p>
+                            </div>
+                            
+                            <div id="members-grid" class="members-grid">
+                                <!-- 成员卡片将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 房间操作按钮 -->
+                    <div class="room-actions">
+                        <div class="action-group">
+                            <button id="start-game-btn" class="btn btn-success hidden">开始游戏</button>
+                            <button id="ready-game-btn" class="btn btn-warning hidden">未命名</button>
+                            <button id="open-oopz-btn" class="btn btn-secondary">语音频道</button>
+                            <button id="leave-room-btn" class="btn btn-danger">离开房间</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧：聊天面板 -->
+                <div class="chat-panel">
+                    <div class="chat-header">
+                        <h3>房间聊天</h3>
+                    </div>
+                    
+                    <!-- 新消息提示 -->
+                    <div class="new-message-notification hidden" id="new-message-notification">
+                        <span id="new-message-count">0</span> 条新消息 - <a href="#" id="scroll-to-bottom">点击查看</a>
+                    </div>
+                    
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message system">
+                            <div class="message-content">欢迎来到聊天室！</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-area">
+                        <div class="chat-input-group">
+                            <input type="text" id="chat-input" class="form-control" placeholder="输入消息..." maxlength="500">
+                            <button id="emoji-btn" class="btn btn-secondary">😀</button>
+                            <button id="select-image-btn" class="btn btn-accent">图片</button>
+                            <button id="send-chat-btn" class="btn btn-accent">发送</button>
+                        </div>
+                        <div style="text-align: center; margin-top: 5px;">
+                            <small style="color: #666;">按 Enter 发送消息</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 加入密码房间模态框 -->
+        <div id="password-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div class="panel" style="width: 90%; max-width: 400px;">
+                <h3>输入房间密码</h3>
+                <div id="password-notification" class="notification hidden"></div>
+                <div class="form-group">
+                    <input type="password" id="join-password" class="form-control" placeholder="请输入房间密码">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="confirm-join-btn" class="btn btn-accent" style="flex: 1;">加入</button>
+                    <button id="cancel-join-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </div>
+        </div>
+        <!-- 修改房间密码模态框 -->
+        <div id="password-change-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div class="panel" style="width: 90%; max-width: 400px;">
+                <h3>输入房间密码</h3>
+                <div id="password-change-notification" class="notification hidden"></div>
+                <div class="form-group">
+                    <input type="password" id="change-password" class="form-control" placeholder="请修改房间密码">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="confirm-change-password-btn" class="btn btn-accent" style="flex: 1;">确认</button>
+                    <button id="cancel-change-password-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </div>
+        </div>
+        <!-- 添加房间密码模态框 -->
+        <div id="password-add-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div class="panel" style="width: 90%; max-width: 400px;">
+                <h3>输入房间密码</h3>
+                <div id="password-add-notification" class="notification hidden"></div>
+                <div class="form-group">
+                    <input type="password" id="add-password" class="form-control" placeholder="请确认房间密码">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="confirm-add-password-btn" class="btn btn-accent" style="flex: 1;">确认</button>
+                    <button id="cancel-add-password-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </div>
+        </div>
+        <!--将房间描述、房间人数、房间名称模态框整合成房间信息模态框-->
+        <div id="edit-roominfo-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div class="panel" style="width: 90%; max-width: 500px;">
+                <h3>编辑房间信息</h3>
+                <div id="room-info-edit-notification" class="notification hidden"></div>
+                <div class="form-group">
+                    <label for="edit-room-name-input">房间名称</label>
+                    <input type="text" id="edit-room-name-input" class="form-control" placeholder="输入房间名称" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="edit-room-description-input">房间描述</label>
+                    <textarea id="edit-room-description-input" class="edit-address-input" placeholder="输入房间描述..." rows="4" style="background-color: var(--background-color, #f0f0f0);"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-max-players-input">最大玩家数</label>
+                    <select id="edit-max-players-input" class="form-control">
+                            <option value="2">2人</option>
+                            <option value="3">3人</option>
+                            <option value="4">4人</option>
+                            <option value="5">5人</option>
+                            <option value="6">6人</option>
+                            <option value="7">7人</option>
+                            <option value="8">8人</option>
+                            <option value="9">9人</option>
+                            <option value="10">10人</option>
+                            <option value="11">11人</option>
+                            <option value="12">12人</option>
+                            <option value="13">13人</option>
+                            <option value="14">14人</option>
+                            <option value="15">15人</option>
+                            <option value="16">16人</option>
+                            <option value="17">17人</option>
+                            <option value="18">18人</option>
+                            <option value="19">19人</option>
+                            <option value="20">20人</option>
+                            <option value="21">21人</option>
+                            <option value="22">22人</option>
+                            <option value="23">23人</option>
+                            <option value="24">24人</option>
+                            <option value="25">25人</option>
+                            <option value="26">26人</option>
+                            <option value="27">27人</option>
+                            <option value="28">28人</option>
+                            <option value="29">29人</option>
+                            <option value="30">30人</option>
+                            <option value="31">31人</option>
+                            <option value="32">32人</option>
+                            <option value="33">33人</option>
+                            <option value="34">34人</option>
+                            <option value="35">35人</option>
+                            <option value="36">36人</option>
+                            <option value="37">37人</option>
+                            <option value="38">38人</option>
+                            <option value="39">39人</option>
+                            <option value="40">40人</option>
+                            <option value="41">41人</option>
+                            <option value="42">42人</option>
+                            <option value="43">43人</option>
+                            <option value="44">44人</option>
+                            <option value="45">45人</option>
+                            <option value="46">46人</option>
+                            <option value="47">47人</option>
+                            <option value="48">48人</option>
+                            <option value="49">49人</option>
+                            <option value="50">50人</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="confirm-edit-room-info-btn" class="btn btn-accent" style="flex: 1;">保存</button>
+                    <button id="cancel-edit-room-info-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Emoji picker -->
+        <div id="emoji-picker" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 2000; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch;">
+            <div style="display: flex; justify-content: flex-end; padding: 10px 20px 0 0;">
+                <button id="emoji-close" class="btn btn-danger btn-sm">关闭</button>
+            </div>
+            <div id="emoji-grid" class="emoji-grid" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(10, 1fr); grid-gap: 8px 4px; padding: 20px; align-items: flex-start;"></div>
+        </div>
+    </div>
+    
+    <script>
+                // emoji数据（用Array.from防止复合emoji被拆分）
+                const EMOJI_LIST = Array.from("😀😃😄😁😆🥹😅😂🤣🥲😊😇🙂🙃😉😌😍🥰😘😗😙😚😋😛😝😜🤪🤨🧐🤓😎🥸🤩🥳😏😒😞😔😟😕😣😖😫😩🥺😢😭😤😠😡🤬🤯😳🥵😱😨😰😥😓🤗🤔🫣🤭🫢🫡🤫🫠🤥😶🫥😐🫤😑🫨😬🙄😯😦😧😮😲🥱😴🤤😪😵🤐🥴🤢🤮🤧😷🤒🤕🤑🤠😈👿👹👺🤡💩👻💀👽👾🤖🎃😺😸😹😻😼😽🙀😿😾🪱🐧🐶🐦🐭🐹🐰🦊🐻🐼🐨🐯🦁🐮🐷🐽🐸🐵🙈🙉🙊🐔🐤🐺🐗🐴🐲🍎🥒🥤🌿🌹🫶🤲👐🙌👏🤝👍👎👊✊🤛🤜🫷🫸🤞✌🫰🤟🤘👌🤌🤏🫳🫴👈👉👆👇👆✋🤚🖐🖖👋🤙🫲🫱💪✍🙏🫵🦶🦵🦿💄💋👄🫦🦷👅👂🦻👃👣👁👀🫀🫁🧠🗣👤👥🫂👶👧");
+                const emojiGrid = document.getElementById('emoji-grid');
+                const emojiCloseBtn = document.getElementById('emoji-close');
+
+                // 常用emoji缓存相关
+                function getEmojiUsage() {
+                    try {
+                        return JSON.parse(localStorage.getItem('emojiUsage') || '{}');
+                    } catch { return {}; }
+                }
+                function saveEmojiUsage(usage) {
+                    localStorage.setItem('emojiUsage', JSON.stringify(usage));
+                }
+                function addEmojiUsage(emoji) {
+                    const usage = getEmojiUsage();
+                    usage[emoji] = (usage[emoji] || 0) + 1;
+                    saveEmojiUsage(usage);
+                }
+                function getFrequentEmojis() {
+                    const usage = getEmojiUsage();
+                    // 只保留EMOJI_LIST中的emoji，按次数降序，最多30个
+                    return Object.entries(usage)
+                        .filter(([e]) => EMOJI_LIST.includes(e))
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 30)
+                        .map(([e]) => e);
+                }
+
+                function renderEmojiPanel() {
+                    emojiGrid.innerHTML = '';
+                    emojiPicker.style.backgroundColor = 'rgba(var(--background-color), 0.5)';
+                    // 常用区
+                    const frequent = getFrequentEmojis();
+                    if (frequent.length > 0) {
+                        const frequentTitle = document.createElement('div');
+                        frequentTitle.textContent = '常用表情';
+                        frequentTitle.style.gridColumn = '1 / -1';
+                        frequentTitle.style.fontWeight = 'bold';
+                        frequentTitle.style.margin = '8px 0 4px 0';
+                        emojiGrid.appendChild(frequentTitle);
+                        frequent.forEach(e => {
+                            const span = document.createElement('span');
+                            span.className = 'emoji';
+                            span.textContent = e;
+                            span.style.fontSize = '1.7rem';
+                            span.style.cursor = 'pointer';
+                            emojiGrid.appendChild(span);
+                        });
+                        // 分隔线
+                        const hr = document.createElement('hr');
+                        hr.style.gridColumn = '1 / -1';
+                        hr.style.margin = '8px 0';
+                        emojiGrid.appendChild(hr);
+                    }
+                    // 全部emoji
+                    EMOJI_LIST.forEach(e => {
+                        const span = document.createElement('span');
+                        span.className = 'emoji';
+                        span.textContent = e;
+                        span.style.fontSize = '1.7rem';
+                        span.style.cursor = 'pointer';
+                        emojiGrid.appendChild(span);
+                    });
+                }
+
+                emojiCloseBtn.addEventListener('click', function() {
+                    emojiPicker.classList.add('hidden');
+                });
+
+                // 绑定emoji点击事件
+                function bindEmojiClick() {
+                    emojiGrid.addEventListener('click', function(e) {
+                        if (e.target.classList.contains('emoji')) {
+                            insertEmojiAtCursor(chatInput, e.target.textContent);
+                            addEmojiUsage(e.target.textContent);
+                        }
+                    });
+                }
+
+                // 初始化emoji面板
+                function initEmojiPanel() {
+                    renderEmojiPanel();
+                    bindEmojiClick();
+                }
+                // 页面加载后初始化emoji面板
+                document.addEventListener('DOMContentLoaded', function() {
+                                // 聊天输入框粘贴图片支持
+                                chatInput.addEventListener('paste', async function(e) {
+                                    if (!e.clipboardData) return;
+                                    const items = e.clipboardData.items;
+                                    if (!items) return;
+                                    for (let i = 0; i < items.length; i++) {
+                                        const item = items[i];
+                                        if (item.kind === 'file' && item.type.startsWith('image/')) {
+                                            const file = item.getAsFile();
+                                            if (!file) continue;
+                                            if (file) {
+                                                compressAndConvertToBase64(file).then((compressedImageDataUrl) => {
+                                                    showImagePreviewModal(compressedImageDataUrl, function(confirmed) {
+                                                        if (confirmed) {
+                                                            sendChatMessageViaSocketIO(compressedImageDataUrl);
+                                                        }
+                                                    }, 'send');
+                                                }).catch((error) => {
+                                                    console.error('图片压缩失败:', error);
+                                                });
+                                            }
+                                        }
+                                    }
+                                });
+                    initEmojiPanel();
+                });
+        // 全局状态
+        let currentUser = null;
+        let currentToken = null;
+        let currentRoom = null;
+        let isRoomCreator = false;
+        let allRooms = [];
+        let chatRefreshInterval = null;
+        let roomRefreshInterval = null;
+        let currentPasswordRoomId = null;
+        let socket = null;
+        let isSocketConnected = false;
+        let insocketroomzero = false; 
+        let insocketroomNow = false;
+        let roomdetailinvision = false;
+
+        // DOM元素
+        const roomListPage = document.getElementById('room-list-page');
+        const roomDetailPage = document.getElementById('room-detail-page');
+        const backToRoomBtn = document.getElementById('back-to-room-btn');
+        const roomsList = document.getElementById('rooms-list');
+
+        // 设置roomsList最大高度和滚动条（防止房间过多时页面过长）
+        if (roomsList) {
+            roomsList.style.maxHeight = '50vh'; // 最大高度可根据实际页面调整
+            roomsList.style.overflowY = 'auto';
+        }
+        const roomsLoading = document.getElementById('rooms-loading');
+        const createRoomNotification = document.getElementById('create-room-notification');
+        const roomsNotification = document.getElementById('rooms-notification');
+        const roomNotification = document.getElementById('room-notification');
+
+        // 创建房间表单元素
+        const createRoomForm = document.getElementById('createRoomForm');
+        const roomNameInput = document.getElementById('room-name');
+        const roomDescriptionInput = document.getElementById('room-description');
+        const roomTypeRadios = document.querySelectorAll('.room-type-radio');
+        const passwordGroup = document.getElementById('password-group');
+        const roomPasswordInput = document.getElementById('room-password');
+        const maxPlayersSelect = document.getElementById('max-players');
+        
+        // 房间详情元素
+        const joinedRoomName = document.getElementById('joined-room-name');
+        const roomStatusBadge = document.getElementById('room-status-badge');
+        const roomTypeBadge = document.getElementById('room-type-badge');
+        const roomCreator = document.getElementById('room-creator');
+        const membersCount = document.getElementById('members-count');
+        const maxPlayersDisplay = document.getElementById('max-players-display');
+        const roomDescriptionLabel = document.getElementById('room-description-label');
+        const roomAddressDisplay = document.getElementById('room-address-display');
+        const roomAddressEdit = document.getElementById('room-address-edit');
+        const editAddressInput = document.getElementById('edit-address-input');
+        const saveAddressBtn = document.getElementById('save-address-btn');
+        const copyAddressBtn = document.getElementById('copy-address-btn');
+        const editAddressBtn = document.getElementById('edit-address-btn');
+
+        const editRoomInfoBtn = document.getElementById('edit-roominfo-btn');
+        
+        const passwordChangeBtn = document.getElementById('password-change-btn');
+        const passwordDeleteBtn = document.getElementById('password-delete-btn');
+        const passwordAddBtn = document.getElementById('password-add-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const membersGrid = document.getElementById('members-grid');
+        const membersStatus = document.getElementById('members-status');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const readyGameBtn = document.getElementById('ready-game-btn');
+        const leaveRoomBtn = document.getElementById('leave-room-btn');
+        const backToListBtn = document.getElementById('back-to-list-btn');
+        const refreshRoomBtn = document.getElementById('refresh-room-btn');
+        const openOopzBtn = document.getElementById('open-oopz-btn');
+
+        // 聊天元素
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const selectImageBtn = document.getElementById('select-image-btn');
+        const sendChatBtn = document.getElementById('send-chat-btn');
+        const newMessageNotification = document.getElementById('new-message-notification');
+        const newMessageCount = document.getElementById('new-message-count');
+        const scrollToBottomLink = document.getElementById('scroll-to-bottom');
+        const emojiBtn = document.getElementById('emoji-btn');
+        const emojiPicker = document.getElementById('emoji-picker');
+
+        // 聊天滚动状态变量
+        let newMessageCountValue = 0;
+        let isUserAtBottom = true;
+        
+        // 搜索筛选元素
+        const roomSearch = document.getElementById('room-search');
+        const roomStatusFilter = document.getElementById('room-status-filter');
+        const roomTypeFilter = document.getElementById('room-type-filter');
+        const refreshRoomsBtn = document.getElementById('refresh-rooms-btn');
+        
+        // 密码模态框元素
+        const passwordModal = document.getElementById('password-modal');
+        const joinPasswordInput = document.getElementById('join-password');
+        const confirmJoinBtn = document.getElementById('confirm-join-btn');
+        const cancelJoinBtn = document.getElementById('cancel-join-btn');
+        const passwordNotification = document.getElementById('password-notification');
+        
+        //密码修改框元素
+        const passwordChangeModal = document.getElementById('password-change-modal');
+        const changePasswordInput = document.getElementById('change-password');
+        const confirmChangePasswordBtn = document.getElementById('confirm-change-password-btn');
+        const cancelChangePasswordBtn = document.getElementById('cancel-change-password-btn');
+        const passwordChangeNotification = document.getElementById('password-change-notification');
+
+        //密码添加框元素
+        const passwordAddModal = document.getElementById('password-add-modal');
+        const addPasswordInput = document.getElementById('add-password');
+        const confirmAddPasswordBtn = document.getElementById('confirm-add-password-btn');
+        const cancelAddPasswordBtn = document.getElementById('cancel-add-password-btn');
+        const passwordAddNotification = document.getElementById('password-add-notification');
+        
+        //编辑信息框元素
+        const editRoomInfoModal = document.getElementById('edit-roominfo-modal');
+        const editRoomNameInput = document.getElementById('edit-room-name-input');
+        const editRoomDescriptionInput = document.getElementById('edit-room-description-input');
+        const editMaxPlayersInput = document.getElementById('edit-max-players-input');
+        const confirmEditRoomInfoBtn = document.getElementById('confirm-edit-room-info-btn');
+        const cancelEditRoomInfoBtn = document.getElementById('cancel-edit-room-info-btn');
+        const roomInfoEditNotification = document.getElementById('room-info-edit-notification');
+
+
+        // 页面加载初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            const savedToken = localStorage.getItem('token');
+            const savedUser = localStorage.getItem('currentUser');
+            const savedRoom = localStorage.getItem('currentRoom');
+            
+            if (savedToken && savedUser) {
+                currentToken = savedToken;
+                currentUser = JSON.parse(savedUser);
+                const issSavedUserValid = validateTokenWithServer(currentToken);
+                if (!issSavedUserValid) {
+                    // token无效，跳转登录
+                    window.location.href = 'login.html';
+                    return;
+                }
+                // 检查是否有保存的房间信息（从匹配跳转过来）
+                if (savedRoom) {
+                    currentRoom = JSON.parse(savedRoom);
+                    // 清除localStorage中的房间信息，避免重复使用
+                    localStorage.removeItem('currentRoom');
+                }
+                
+                initSocketIO();
+
+                
+                // 更新header组件
+                const header = document.querySelector('header-component');
+                header.updateUserInfo(currentUser);
+                
+                // 检查用户是否在房间中
+                if (currentRoom) {
+                    // 如果有保存的房间信息，直接显示房间详情
+                    showRoomDetailPage();
+                } else {
+                    checkUserRoomStatus();
+                }
+            } else {
+                // 未登录，跳转到登录页
+                window.location.href = 'login.html';
+            }
+            
+            // 绑定事件监听器
+            bindEventListeners();
+            
+            // 加载房间列表
+            loadRooms();
+
+                // 轮询机制：每1秒检测Socket连接和房间状态
+                setInterval(function() {
+                    // 未连接Socket时尝试连接
+                    if (!isSocketConnected) {
+                        initSocketIO();
+                    }
+
+                    if (isSocketConnected && !insocketroomzero) {
+                        joinRoomListSocketIORoom();
+                    }
+
+                    if (isSocketConnected && currentRoom && roomdetailinvision && !insocketroomNow) {
+                        joinSocketIORoom(currentRoom.id);
+                    }
+                }, 2000);
+        });
+        
+        async function validateTokenWithServer(token) {
+            try {
+                const response = await fetch('/api/validate_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.valid;
+                } else {
+                    return false;
+                }
+            } catch (error) {
+                console.error('验证Token错误:', error);
+                return false;
+            }
+        }
+
+        // 绑定事件监听器
+        function bindEventListeners() {
+            // 房间类型切换
+            roomTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'private') {
+                        passwordGroup.classList.remove('hidden');
+                        roomPasswordInput.required = true;
+                    } else {
+                        passwordGroup.classList.add('hidden');
+                        roomPasswordInput.required = false;
+                        roomPasswordInput.value = '';
+                    }
+                });
+            });
+            
+            // 创建房间表单提交
+            createRoomForm.addEventListener('submit', handleCreateRoom);
+            
+            // 刷新房间列表
+            refreshRoomsBtn.addEventListener('click', loadRooms);
+            
+            // 回到房间按钮
+            backToRoomBtn.addEventListener('click', goBackToRoom);
+            
+            //打开Oopz频道
+            openOopzBtn.addEventListener('click', openOopzChannel);
+
+            // 搜索筛选
+            roomSearch.addEventListener('input', filterRooms);
+            roomStatusFilter.addEventListener('change', filterRooms);
+            roomTypeFilter.addEventListener('change', filterRooms);
+            
+            // 房间详情操作
+            refreshRoomBtn.addEventListener('click', refreshRoomDetails);
+            copyAddressBtn.addEventListener('click', copyRoomAddress);
+            editAddressBtn.addEventListener('click', editRoomAddress);
+            passwordChangeBtn.addEventListener('click', changeRoomPassword);
+            passwordDeleteBtn.addEventListener('click', deleteRoomPassword);
+            passwordAddBtn.addEventListener('click', addRoomPassword);
+            confirmChangePasswordBtn.addEventListener('click', confirmChangeRoomPassword);
+            cancelChangePasswordBtn.addEventListener('click', cancelChangeRoomPassword);
+            confirmAddPasswordBtn.addEventListener('click', confirmAddRoomPassword);
+            cancelAddPasswordBtn.addEventListener('click', cancelAddRoomPassword);
+            
+            cancelEditBtn.addEventListener('click', cancelEditAddress);
+            saveAddressBtn.addEventListener('click', saveRoomAddress);
+            startGameBtn.addEventListener('click', startGame);
+            readyGameBtn.addEventListener('click', toggleReadyStatus);
+            leaveRoomBtn.addEventListener('click', leaveRoom);
+            backToListBtn.addEventListener('click', backToRoomList);
+            
+            //编辑房间信息模态框
+            editRoomInfoBtn.addEventListener('click', editRoomInfo);
+            confirmEditRoomInfoBtn.addEventListener('click', confirmEditRoomInfo);
+            cancelEditRoomInfoBtn.addEventListener('click', cancelEditRoomInfo);
+
+            // 聊天功能
+            selectImageBtn.addEventListener('click', selectImageForChat);
+            sendChatBtn.addEventListener('click', sendChatMessage);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+            emojiBtn.addEventListener('click', toggleEmojiPicker);
+
+            // 密码模态框
+            confirmJoinBtn.addEventListener('click', confirmJoinRoom);
+            cancelJoinBtn.addEventListener('click', cancelJoinRoom);
+            
+            // 页面关闭时清理
+            window.addEventListener('beforeunload', function() {
+                if (socket && isSocketConnected) {
+                    socket.disconnect();
+                }
+            });
+        }
+
+        async function EditRoomDescription(newDescription) {
+            if (newDescription === currentRoom.description) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/description`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ description: newDescription })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentRoom.description = newDescription;
+                    roomDescriptionLabel.textContent = newDescription || '无';
+                    showNotification(roomNotification, '描述更新成功', 'success');
+                } else {
+                    showNotification(roomNotification, data.message || '更新失败', 'error');
+                }
+            } catch (error) {
+                console.error('更新描述错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        async function EditRoomName(newName) {
+            if (newName === currentRoom.name) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/name`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentRoom.name = newName;
+                    joinedRoomName.textContent = newName;
+                    showNotification(roomNotification, '房间名称更新成功', 'success');
+                } else {
+                    showNotification(roomNotification, data.message || '更新失败', 'error');
+                }
+            } catch (error) {
+                console.error('更新房间名称错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        function openOopzChannel() {
+            if (!currentRoom) {
+                showNotification(roomNotification, '无法打开语音频道: 未加入任何房间', 'error');
+                return;
+            }
+            const oopzUrl = `https://oopz.cn/i/0Jk16G`;
+            window.open(oopzUrl, '_blank');
+        }
+
+        function editRoomInfo() {
+            if (!currentRoom) {
+                showNotification(roomNotification, '无法编辑信息: 未加入任何房间', 'error');
+                return;
+            }
+            editRoomNameInput.value = currentRoom.name || '';
+            editRoomDescriptionInput.value = currentRoom.description || '';
+            editMaxPlayersInput.value = currentRoom.max_players || 4;
+            editRoomInfoModal.classList.remove('hidden');
+        }
+
+        function confirmEditRoomInfo() {
+            EditRoomName(editRoomNameInput.value.trim());
+            EditRoomDescription(editRoomDescriptionInput.value.trim());
+            EditMaxPlayers(parseInt(editMaxPlayersInput.value));
+            editRoomInfoModal.classList.add('hidden');
+        }
+
+        function cancelEditRoomInfo() {
+            editRoomInfoModal.classList.add('hidden');
+        }
+
+        async function EditMaxPlayers(newMaxInt) {
+            if (isNaN(newMaxInt) || newMaxInt < 2 || newMaxInt > 50) {
+                showNotification(roomNotification, '请输入有效的玩家数（2-50）', 'error');
+                return;
+            }
+            if (newMaxInt === currentRoom.max_players) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/update_max_players`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ max_players: newMaxInt })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    currentRoom.max_players = newMaxInt;
+                    maxPlayersDisplay.textContent = newMaxInt;
+                    showNotification(roomNotification, '最大玩家数更新成功', 'success');
+                } else {
+                    showNotification(roomNotification, data.message || '更新最大玩家数失败', 'error');
+                }
+            } catch (error) {
+                console.error('更新最大玩家数错误:', error);
+                showNotification(roomNotification, '网络错误，无法更新最大玩家数', 'error');
+            }
+        }
+
+
+        //打开emoji面板：
+        function toggleEmojiPicker() {
+            const chatPanel = document.querySelector('.chat-panel');
+            const chatMessages = document.getElementById('chat-messages');
+            renderEmojiPanel(); // 每次打开都重新渲染，确保常用表情更新
+            if (emojiPicker.classList.contains('hidden')) {
+                // 只覆盖聊天消息区域
+                const panelRect = chatPanel.getBoundingClientRect();
+                const msgRect = chatMessages.getBoundingClientRect();
+                // 计算相对chatPanel的top/left
+                const relTop = msgRect.top - panelRect.top;
+                emojiPicker.style.position = 'absolute';
+                emojiPicker.style.top = chatPanel.offsetTop + relTop + 'px';
+                emojiPicker.style.left = chatPanel.offsetLeft + 'px';
+                emojiPicker.style.width = chatMessages.offsetWidth + 'px';
+                emojiPicker.style.height = chatMessages.offsetHeight + 'px';
+                emojiPicker.classList.remove('hidden');
+            } else {
+                emojiPicker.classList.add('hidden');
+            }
+        }
+        //选择emoji插入输入框：
+        function insertEmojiAtCursor(input, emoji) {
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            input.value = text.slice(0, start) + emoji + text.slice(end);
+            input.selectionStart = input.selectionEnd = start + emoji.length;
+            emojiPicker.classList.add('hidden');
+        }
+
+        function initSocketIO() {
+            if (!currentToken) {
+                console.error('无法初始化SocketIO: 无有效token');
+                return;
+            }
+            
+            // 直接建立连接，不使用复杂配置
+            socket = io();
+            // 连接成功后设置token
+            socket.on('connect', function() {
+                console.log('SocketIO连接成功');
+                isSocketConnected = true;
+                
+                // 发送身份验证
+                socket.emit('authenticate', { token: currentToken });
+
+                if (!insocketroomzero) {
+                    joinRoomListSocketIORoom();
+                }
+                if (!insocketroomNow && currentRoom && roomdetailinvision) {
+                    joinSocketIORoom(currentRoom.id);
+                }
+            });
+            
+            socket.on('update-online-users', function(data) {
+                console.log('在线用户数更新:', data);
+                if (currentRoom){
+                    loadRoomMembers();
+                }
+            });
+
+            // 简单消息处理
+            socket.on('message', function(data) {
+                console.log('收到消息:', data);
+                addMessageToChat(data);
+                if (data.message_type === 'system') {
+                    if (data.content.includes('被房主踢出房间') && data.content.includes(currentUser.nickname)) {
+                        // 如果当前用户被踢出房间，离开房间并返回房间列表
+                        loadRoomMembers();
+                        showNotification(roomsNotification, '您已被房主踢出房间', 'error');   
+                        currentRoom = null;
+                        initSocketIO();
+                        updateBackToRoomButton();
+                        showRoomListPage();
+                    } else {
+                        refreshRoomDetails();
+                    }
+                }
+            });
+
+            socket.on('withdraw_message', function(data) {
+                console.log('收到撤回消息通知:', data);
+                const msgDiv = document.querySelector(`[data-message-id="${data.message_id}"]`);
+                if (msgDiv) msgDiv.remove();
+            });
+
+            socket.on('update-room-type', function(data) {
+                console.log('收到房间类型更新:', data);
+                currentRoom.room_type = data.content;
+                if (currentRoom.room_type === 'private') {
+                    roomTypeBadge.textContent = '密码房间';
+                    roomTypeBadge.classList.remove('status-public');
+                    roomTypeBadge.classList.add('status-private');
+                } else {
+                    roomTypeBadge.textContent = '公开房间';
+                    roomTypeBadge.classList.remove('status-private');
+                    roomTypeBadge.classList.add('status-public');
+                }
+                showNotification(roomNotification, `房间类型已更新为: ${data.content}`, 'success');
+            });
+
+            socket.on('update-max-players', function(data) {
+                console.log('收到最大玩家数更新:', data);
+                currentRoom.max_players = data.content;
+                maxPlayersDisplay.textContent = data.content;
+                showNotification(roomNotification, `最大玩家数已更新为: ${data.content}`, 'success');
+            });
+
+            socket.on('update-game-status', function(data) {
+                console.log('收到游戏状态更新:', data);
+                currentRoom.game_status = data.content;
+                updateRoomInfo();
+                showNotification(roomNotification, `游戏状态已更新为: ${data.content}`, 'success');
+            });
+
+            socket.on('error', function(error) {
+                console.error('SocketIO错误:', error);
+                //如果令牌已过期则清空令牌、跳转到登录页
+                if (error && error.message && error.message.includes('令牌')) {
+                    showNotification(roomNotification, '身份验证失败，请重新登录', 'error');
+                    localStorage.removeItem('token');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                }
+            });
+
+            socket.on('toggle-ready', function(data) {
+                console.log('收到准备状态更新:', data);
+                loadRoomMembers();
+            });
+            
+            socket.on('description', function(data) {
+                console.log('收到房间描述更新:', data);
+                if (currentRoom && data.room_id === currentRoom.id) {
+                    roomDescriptionInput.textContent = data.content || '暂无内容';
+                }
+            });
+
+            socket.on('update-name', function(data) {
+                console.log('收到房间名称更新:', data);
+                if (currentRoom && data.room_id === currentRoom.id) {
+                    joinedRoomName.textContent = data.content || '房间名称';
+                }
+            });
+
+            socket.on('address', function(data) {
+                console.log('收到房间内容更新:', data);
+                if (currentRoom && data.room_id === currentRoom.id) {
+                    roomAddressInput.textContent = data.content || '暂无地址';
+                }
+            });
+
+            socket.on('room_list_update', function(data) {
+                console.log('收到房间列表更新:', data);
+                // 只有在房间列表页面时才自动刷新
+                if (!roomDetailPage.classList.contains('active')) {
+                    loadRooms();
+                }
+            });
+
+            socket.on('disconnect', function() {
+                console.log('SocketIO断开连接');
+                isSocketConnected = false;
+            });
+        }
+
+        // 加入房间列表SocketIO房间
+        function joinRoomListSocketIORoom() {
+            if (!socket || !isSocketConnected) {
+                console.error('无法加入房间列表SocketIO房间: 连接未建立');
+                return;
+            }
+            socket.emit('join_room_list', { token: currentToken }, function(response) {
+                if (response && response.success) {
+                    insocketroomzero = true;
+                    console.log('加入房间列表更新房间成功');
+                } else {
+                    console.error('加入房间列表更新房间失败:', response ? response.message : '未知错误');
+                }
+            });
+        }
+
+        // 加入SocketIO房间
+        function joinSocketIORoom(roomId) {
+            if (!socket || !isSocketConnected) {
+                console.error('无法加入SocketIO房间: 连接未建立');
+                return;
+            }
+            socket.emit('join_room', {
+                room_id: roomId,
+                token: currentToken
+            }, function(response) {
+                console.log(response);
+                if (response && response.success) {
+                    insocketroomNow = true;
+                    console.log(`加入SocketIO房间 ${roomId} 成功`);
+                } else {
+                    console.error('加入SocketIO房间失败:', response ? response.message : '未知错误');
+                }
+            })
+            
+        }
+
+        // 离开SocketIO房间
+        function leaveSocketIORoom(roomId) {
+            if (!socket || !isSocketConnected) {
+                console.error('无法离开SocketIO房间: 连接未建立');
+                return;
+            }
+            socket.emit('leave_room', {
+                room_id: roomId,
+                token: currentToken
+            }, function(response) {
+                if (response && response.success) {
+                    insocketroomNow = false;
+                    console.log(`离开SocketIO房间 ${roomId} 成功`);
+                } else {
+                    console.error('离开SocketIO房间失败:', response ? response.message : '未知错误');
+                }
+            });
+        }
+
+        // 发送聊天消息（通过SocketIO）
+        function sendChatMessageViaSocketIO(content) {
+            if (!socket || !isSocketConnected || !currentRoom) {
+                return false;
+            }
+            emojiPicker.classList.add('hidden');
+
+            socket.emit('chat', currentUser, {
+                room_id: currentRoom.id,
+                message: content,
+                token: currentToken
+            })
+            return true;
+        }
+        function compressAndConvertToBase64(file, maxSize = 1024 * 1024) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.startsWith('image/')) return reject('不是图片');
+            const img = new Image();
+            const reader = new FileReader();
+            reader.onload = function(e) {
+            img.src = e.target.result;
+            };
+            img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let w = img.width, h = img.height;
+            // 限制最大宽高
+            const maxW = 1600, maxH = 900;
+            if (w > maxW || h > maxH) {
+                if (w / h > maxW / maxH) {
+                h = Math.round(h * maxW / w);
+                w = maxW;
+                } else {
+                w = Math.round(w * maxH / h);
+                h = maxH;
+                }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            // 压缩质量
+            let quality = 0.8;
+            let dataUrl = canvas.toDataURL('image/jpeg', quality);
+            // 循环压缩到小于maxSize
+            while (dataUrl.length > maxSize * 1.37 && quality > 0.2) {
+                quality -= 0.1;
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            resolve(dataUrl);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+        }
+        //选择本地图片
+        function selectImageForChat() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.click();
+            
+            fileInput.addEventListener('change', function() {
+                const file = fileInput.files[0];
+                if (file) {
+                    compressAndConvertToBase64(file).then((compressedImageDataUrl) => {
+                        showImagePreviewModal(compressedImageDataUrl, function(confirmed) {
+                            if (confirmed) {
+                                sendChatMessageViaSocketIO(compressedImageDataUrl);
+                            }
+                        }, 'send');
+                    }).catch((error) => {
+                        console.error('图片压缩失败:', error);
+                    });
+                }
+            });
+        }
+
+        // 预览图片，source: 'send' | 'preview'
+        function showImagePreviewModal(imageDataUrl, callback, source = 'send') {
+            let modal = document.getElementById('image-preview-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'image-preview-modal';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100vw';
+                modal.style.height = '100vh';
+                modal.style.background = 'rgba(0,0,0,0.5)';
+                modal.style.zIndex = '3000';
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.innerHTML = `
+                    <div style="background:#fff;padding:24px 24px 16px 24px;border-radius:12px;box-shadow:0 2px 16px #0003;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;">
+                        <div id="preview-img-title" style="margin-bottom:16px;font-size:1.1rem;">图片预览</div>
+                        <img id="preview-img" src="" alt="预览" style="max-width:60vw;max-height:60vh;border-radius:8px;box-shadow:0 1px 4px #0002;">
+                        <div id="preview-img-btns" style="margin-top:18px;display:flex;gap:18px;"></div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            const img = modal.querySelector('#preview-img');
+            img.src = imageDataUrl;
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            // 按钮区
+            const btnsDiv = modal.querySelector('#preview-img-btns');
+            btnsDiv.innerHTML = '';
+            if (source === 'send') {
+                btnsDiv.innerHTML = `<button id="confirm-send-img-btn" class="btn btn-accent">发送</button><button id="cancel-send-img-btn" class="btn btn-secondary">取消</button>`;
+            } else {
+                btnsDiv.innerHTML = `<button id="save-img-btn" class="btn btn-accent">保存图片</button><button id="cancel-send-img-btn" class="btn btn-secondary">关闭</button>`;
+            }
+            // 绑定按钮
+            const confirmBtn = modal.querySelector('#confirm-send-img-btn');
+            const saveBtn = modal.querySelector('#save-img-btn');
+            const cancelBtn = modal.querySelector('#cancel-send-img-btn');
+            if (confirmBtn) {
+                confirmBtn.onclick = function() {
+                    modal.style.display = 'none';
+                    if (callback) callback(true);
+                };
+            }
+            if (saveBtn) {
+                saveBtn.onclick = function() {
+                    // 下载图片
+                    const a = document.createElement('a');
+                    a.href = imageDataUrl;
+                    a.download = 'chat-image.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+            }
+            if (cancelBtn) {
+                cancelBtn.onclick = function() {
+                    modal.style.display = 'none';
+                    if (callback) callback(false);
+                };
+            }
+        }
+        
+
+
+        // 检查用户房间状态
+        async function checkUserRoomStatus() {
+            try {
+                const response = await fetch('/api/user/rooms', {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.rooms && data.rooms.length > 0) {
+                    // 用户已在房间中
+                    currentRoom = data.rooms[0];
+                    
+                    // 更新"回到房间"按钮显示
+                    updateBackToRoomButton();
+                    
+                    // 如果用户已经在房间中，自动显示房间详情页面
+                    showRoomDetailPage();
+                } else {
+                    // 用户不在任何房间中
+                    currentRoom = null;
+                    updateBackToRoomButton();
+                    showRoomListPage();
+                }
+            } catch (error) {
+                console.error('检查用户房间状态错误:', error);
+                showRoomListPage();
+            }
+        }
+        
+        // 更新"回到房间"按钮显示
+        function updateBackToRoomButton() {
+            if (currentRoom) {
+                backToRoomBtn.classList.remove('hidden');
+            } else {
+                backToRoomBtn.classList.add('hidden');
+            }
+        }
+        
+        // 显示房间列表页面
+        function showRoomListPage() {
+            roomdetailinvision = false;
+            if (insocketroomNow && currentRoom && currentRoom.id) {
+                leaveSocketIORoom(currentRoom.id);
+            }
+            
+            if (!currentToken) {
+                window.location.href = 'login.html';
+                return;
+            }
+            roomListPage.classList.remove('hidden');
+            roomDetailPage.classList.remove('active');
+            
+            // 连接到全局房间0以接收房间更新通知
+            
+            // 加载房间列表
+            loadRooms();
+        }
+        
+
+
+        // 显示房间详情页面
+        function showRoomDetailPage() {
+            roomdetailinvision = true;
+            if (!insocketroomNow && isSocketConnected) {
+                joinSocketIORoom(currentRoom.id);
+            }
+            roomListPage.classList.add('hidden');
+            roomDetailPage.classList.add('active');
+            
+            roomTypeBadge.classList.remove('status-public', 'status-private');
+            if (currentRoom.room_type === 'private') {
+                roomTypeBadge.textContent = '密码房间';
+                roomTypeBadge.classList.add('status-private');
+            } else {
+                roomTypeBadge.textContent = '公开房间';
+                roomTypeBadge.classList.add('status-public');
+            }
+
+            const current_game_status = currentRoom.game_status
+            if (current_game_status === 'waiting') {
+                startGameBtn.textContent = '开始游戏';
+                startGameBtn.classList = 'btn btn-success';
+            } else if (current_game_status === 'playing') {
+                startGameBtn.textContent = '结束游戏';
+                startGameBtn.classList = 'btn btn btn-danger';
+            } else {    
+                startGameBtn.textContent = '重新等待';
+                startGameBtn.classList = 'btn btn-secondary';
+            }
+
+            // 更新房间信息
+            updateRoomInfo();
+            
+            // 重置聊天状态
+            hideNewMessageNotification();
+            isUserAtBottom = true;
+            
+            // 先加载成员并预缓存头像，再加载聊天历史，确保聊天区能命中缓存
+            (async function() {
+                await loadRoomMembers();
+                await loadChatHistory();
+            })();
+            
+        }
+        async function loadChatHistory() {
+            if (!currentRoom) return;
+            
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/chat`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayChatMessages(data.messages);
+                }
+            } catch (error) {
+                console.error('加载聊天历史错误:', error);
+            }
+        }
+
+        // 回到房间
+        function goBackToRoom() {
+            if (currentRoom) {
+                showRoomDetailPage();
+            }
+        }
+        
+        // 加载房间列表
+        async function loadRooms() {
+            roomsLoading.classList.remove('hidden');
+            roomsList.innerHTML = '';
+            updateBackToRoomButton()
+            try {
+                const response = await fetch('/api/rooms', {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    allRooms = data.rooms;
+                    filterRooms();
+                } else {
+                    showNotification(roomsNotification, data.message || '加载房间列表失败', 'error');
+                    if (data.message === '用户不存在！') {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'login.html';
+                    }
+                }
+            } catch (error) {
+                console.error('加载房间列表错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+            } finally {
+                roomsLoading.classList.add('hidden');
+            }
+        }
+        
+        // 筛选房间
+        function filterRooms() {
+            const searchTerm = roomSearch.value.toLowerCase().trim();
+            const statusFilter = roomStatusFilter.value;
+            const typeFilter = roomTypeFilter.value;
+            
+            let filteredRooms = allRooms;
+            
+            // 按状态筛选
+            if (statusFilter !== 'all') {
+                filteredRooms = filteredRooms.filter(room => room.game_status === statusFilter);
+            }
+            
+
+            if (typeFilter !== 'all') {
+                filteredRooms = filteredRooms.filter(room => {
+                    const isPrivate = room.room_type === 'private';
+                    return typeFilter === 'private' ? isPrivate : !isPrivate;
+                });
+            }
+            
+            // 按搜索词筛选
+            if (searchTerm) {
+                filteredRooms = filteredRooms.filter(room => 
+                    room.name.toLowerCase().includes(searchTerm) ||
+                    (room.description && room.description.toLowerCase().includes(searchTerm)) ||
+                    room.creator_nickname.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            displayRooms(filteredRooms);
+        }
+        
+        // 显示房间列表
+        function displayRooms(rooms) {
+            roomsList.innerHTML = '';
+            
+            if (rooms.length === 0) {
+                roomsList.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">未找到房间</div>';
+                return;
+            }
+            
+            rooms.forEach(room => {
+                const isPrivate = room.room_type === 'private' ;
+                const isUserInRoom = currentRoom && currentRoom.id === room.id;
+                const isFull = room.member_count >= room.max_players;
+                
+                const roomCard = document.createElement('div');
+                roomCard.className = `room-card ${isUserInRoom ? 'user-in-room' : ''} ${isFull ? 'full' : ''}`;
+                
+                // 状态文本
+                let statusText = '';
+                let statusClass = '';
+                switch(room.game_status) {
+                    case 'waiting':
+                        statusText = '等待中';
+                        statusClass = 'status-waiting';
+                        break;
+                    case 'playing':
+                        statusText = '游戏中';
+                        statusClass = 'status-playing';
+                        break;
+                    case 'finished':
+                        statusText = '已结束';
+                        statusClass = 'status-finished';
+                        break;
+                }
+
+                roomCard.innerHTML = `
+                    <div class="room-card-header">
+                        <div class="room-name">${room.name}</div>
+                        <span class="room-status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    
+                    ${room.description ? `<p style="margin: 10px 0; color: #666;">${room.description}</p>` : ''}
+                    
+                    <div class="room-meta">
+                        <span class="room-tag">房主: ${room.creator_nickname}</span>
+                        <span class="room-tag">${room.member_count}/${room.max_players}人</span>
+                        <span class="room-tag ${isPrivate ? 'private' : 'public'}">${isPrivate ? '密码房间' : '公开房间'}</span>
+                    </div>
+                    
+                    <div class="room-actions-small">
+                        ${isUserInRoom ? 
+                            `<button class="btn btn-success" disabled>已加入</button>` :
+                            `<button class="btn btn-accent join-room-btn" data-room-id="${room.id}" ${isFull ? 'disabled' : ''}>
+                                ${isFull ? '房间已满' : '加入房间'}
+                            </button>`
+                        }
+                    </div>
+                `;
+                
+                roomsList.appendChild(roomCard);
+                
+                // 绑定加入房间事件
+                if (!isUserInRoom && !isFull) {
+                    const joinBtn = roomCard.querySelector('.join-room-btn');
+                    joinBtn.addEventListener('click', function() {
+                        const roomId = this.getAttribute('data-room-id');
+                        joinRoom(roomId);
+                    });
+                }
+            });
+        }
+        function addRoomPassword() {
+            passwordAddModal.classList.remove('hidden');
+            addPasswordInput.value = '';
+            addPasswordInput.focus();
+            passwordAddNotification.classList.add('hidden');
+        }
+        function cancelAddRoomPassword() {
+            passwordAddModal.classList.add('hidden');
+        }
+        async function confirmAddRoomPassword() {
+            const newPassword = addPasswordInput.value.trim();
+            if (!newPassword) {
+                showNotification(passwordAddNotification, '请输入新的房间密码', 'error');
+                return;
+            }
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/add_password`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }, 
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showNotification(roomNotification, '房间密码添加成功！', 'success');
+                    passwordAddModal.classList.add('hidden');
+                    currentRoom.room_type = 'private';
+                    showRoomDetailPage();
+                } else {
+                    showNotification(roomNotification, data.message || '添加密码失败', 'error');
+                }
+            } catch (error) {
+                console.error('添加房间密码错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        function changeRoomPassword() {
+            passwordChangeModal.classList.remove('hidden');
+            changePasswordInput.value = '';
+            changePasswordInput.focus();
+            passwordChangeNotification.classList.add('hidden');
+        }
+        function cancelChangeRoomPassword() {
+            passwordChangeModal.classList.add('hidden');
+        }
+        async function confirmChangeRoomPassword() {
+            const newPassword = changePasswordInput.value.trim();
+            if (!newPassword) {
+                showNotification(passwordChangeNotification, '请输入新的房间密码', 'error');
+                return;
+            }
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/change_password`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showNotification(roomNotification, '房间密码修改成功！', 'success');
+                    passwordChangeModal.classList.add('hidden');
+                } else {
+                    showNotification(roomNotification, data.message || '修改密码失败', 'error');
+                }
+            } catch (error) {
+                console.error('修改房间密码错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        // 加入房间
+        async function joinRoom(roomId) {
+            const room = allRooms.find(r => r.id == roomId);
+            if (!room) return;
+            try {
+                const response = await fetch('/api/Ismatching', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('检查匹配状态失败: 非200响应', response.status, text);
+                    showMatchForm();
+                    return;
+                }
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('检查匹配状态失败: 响应非JSON', text);
+                    showMatchForm();
+                    return;
+                }
+                const data = await response.json();
+                if (data.is_matching) {
+                    showNotification(roomsNotification, '您正在匹配中，无法加入房间；若需要加入房间，请前往匹配页面取消匹配', 'error');
+                    return;
+                }
+            } catch (error) {
+                console.error('检查匹配状态错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+                return;
+            }
+
+            const isPrivate = room.room_type === 'private';
+            
+            if (isPrivate) {
+                // 显示密码输入模态框
+                currentPasswordRoomId = roomId;
+                passwordModal.classList.remove('hidden');
+                joinPasswordInput.value = '';
+                joinPasswordInput.focus();
+                passwordNotification.classList.add('hidden');
+            } else {
+                // 直接加入公开房间
+                await performJoinRoom(roomId, null);
+            }
+        }
+        
+        // 确认加入密码房间
+        async function confirmJoinRoom() {
+            const password = joinPasswordInput.value.trim();
+            
+            if (!password) {
+                showNotification(passwordNotification, '请输入房间密码', 'error');
+                return;
+            }
+            
+            await performJoinRoom(currentPasswordRoomId, password);
+        }
+        
+        // 取消加入
+        function cancelJoinRoom() {
+            passwordModal.classList.add('hidden');
+            currentPasswordRoomId = null;
+        }
+        
+        // 执行加入房间操作
+        async function performJoinRoom(roomId, password) {
+            try {
+                const response = await fetch(`/api/rooms/${roomId}/join`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ room_id: roomId, password: password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    passwordModal.classList.add('hidden');
+                    currentRoom = data.room;
+                    
+                    // 更新"回到房间"按钮
+                    updateBackToRoomButton();
+                    
+                    // 显示房间详情页面
+                    showRoomDetailPage();
+                    
+                    showNotification(roomsNotification, '加入房间成功！', 'success');
+                } else {
+                    showNotification(passwordNotification, data.message || '加入房间失败', 'error');
+                }
+            } catch (error) {
+                console.error('加入房间错误:', error);
+                showNotification(passwordNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        
+        // 创建房间
+        async function handleCreateRoom(e) {
+            e.preventDefault();
+            
+try {
+            const response = await fetch('/api/Ismatching', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                const contentType = response.headers.get('content-type') || '';
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('检查匹配状态失败: 非200响应', response.status, text);
+                    showMatchForm();
+                    return;
+                }
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('检查匹配状态失败: 响应非JSON', text);
+                    showMatchForm();
+                    return;
+                }
+                const data = await response.json();
+                if (data.is_matching) {
+                    showNotification(roomsNotification, '您正在匹配中，无法创建房间；若需要创建房间，请前往匹配页面取消匹配', 'error');
+                    return;
+                }
+            } catch (error) {
+                console.error('检查匹配状态错误:', error);
+                showNotification(roomsNotification, '网络错误，请稍后重试', 'error');
+                return;
+            }
+
+            const roomName = roomNameInput.value.trim();
+            const roomDescription = roomDescriptionInput.value.trim();
+            const roomType = document.querySelector('input[name="room-type"]:checked').value;
+            const password = roomPasswordInput.value;
+            const maxPlayers = maxPlayersSelect.value;
+            
+            // 验证输入
+            if (!roomName) {
+                showNotification(createRoomNotification, '请输入房间名称', 'error');
+                return;
+            }
+            
+            if (roomType === 'private' && !password) {
+                showNotification(createRoomNotification, '请输入房间密码', 'error');
+                return;
+            }
+            
+            // 准备数据
+            const roomData = {
+                name: roomName,
+                description: roomDescription,
+                max_players: parseInt(maxPlayers)
+            };
+            
+            // 根据房间类型设置密码
+            if (roomType === 'private') {
+                roomData.password = password;
+                roomData.room_type = 'private';
+            } else {
+                roomData.password = null;
+                roomData.room_type = 'public';
+            }
+            
+            // 发送请求
+            try {
+                const btn = createRoomForm.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = '创建中...';
+                
+                const response = await fetch('/api/rooms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify(roomData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // 重置表单
+                    createRoomForm.reset();
+                    passwordGroup.classList.add('hidden');
+                    
+                    showNotification(createRoomNotification, '房间创建成功！', 'success');
+                    
+                    // 更新当前房间并显示详情
+                    currentRoom = data.room;
+                    
+                    // 更新"回到房间"按钮
+                    updateBackToRoomButton();
+
+                    // 显示房间详情页面
+                    showRoomDetailPage();
+                    
+                    // 刷新房间列表
+                    loadRooms();
+                } else {
+                    showNotification(createRoomNotification, data.message || '创建房间失败', 'error');
+                }
+            } catch (error) {
+                console.error('创建房间错误:', error);
+                showNotification(createRoomNotification, '网络错误，请稍后重试', 'error');
+            } finally {
+                const btn = createRoomForm.querySelector('button[type="submit"]');
+                btn.disabled = false;
+                btn.textContent = '创建房间';
+            }
+        }
+        
+        // 更新房间信息
+        function updateRoomInfo() {
+            if (!currentRoom) return;
+            
+            // 基本信息
+            joinedRoomName.textContent = currentRoom.name;
+            roomCreator.textContent = currentRoom.creator_nickname;
+            membersCount.textContent = currentRoom.member_count;
+            maxPlayersDisplay.textContent = currentRoom.max_players;
+            roomDescriptionLabel.textContent = currentRoom.description || '暂无房间描述';
+
+            // 状态
+            let statusText = '';
+            let statusClass = '';
+            switch(currentRoom.game_status) {
+                case 'waiting':
+                    statusText = '等待中';
+                    statusClass = 'status-waiting';
+                    break;
+                case 'playing':
+                    statusText = '游戏中';
+                    statusClass = 'status-playing';
+                    break;
+                case 'finished':
+                    statusText = '已结束';
+                    statusClass = 'status-finished';
+                    break;
+            }
+            roomStatusBadge.textContent = statusText;
+            roomStatusBadge.className = `room-status-badge ${statusClass}`;
+            
+            // 描述
+            const address = currentRoom.server_address || '暂无内容';
+            roomAddressDisplay.textContent = address;
+            
+            // 检查是否是房主
+            isRoomCreator = currentUser && currentRoom.creator === currentUser.username;
+
+            passwordChangeBtn.classList.toggle('hidden', !isRoomCreator);
+            passwordDeleteBtn.classList.toggle('hidden', !isRoomCreator);
+            passwordAddBtn.classList.toggle('hidden', !isRoomCreator);
+            // 显示/隐藏编辑描述按钮
+            editAddressBtn.classList.toggle('hidden', !isRoomCreator);
+            editRoomInfoBtn.classList.toggle('hidden', !isRoomCreator);
+            if (isRoomCreator) {
+                if (currentRoom.room_type === 'private') {
+                    passwordChangeBtn.classList.remove('hidden');
+                    passwordDeleteBtn.classList.remove('hidden');
+                    passwordAddBtn.classList.add('hidden');
+                } else {
+                    passwordChangeBtn.classList.add('hidden');
+                    passwordDeleteBtn.classList.add('hidden');
+                    passwordAddBtn.classList.remove('hidden');
+                }
+            }
+
+
+            // 显示/隐藏开始游戏按钮
+            startGameBtn.classList.toggle('hidden', !isRoomCreator);
+            readyGameBtn.classList.toggle('hidden', isRoomCreator);
+            
+            if (currentRoom.game_status === 'playing') {
+
+            }
+        }
+
+        async function deleteRoomPassword() {
+            const confirmDelete = confirm('确定要删除房间密码吗？房间将变为公开房间。');
+            if (!confirmDelete) return;
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/delete_password`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showNotification(roomNotification, '房间密码已删除', 'success');
+                    passwordChangeBtn.classList.add('hidden');
+                    passwordDeleteBtn.classList.add('hidden');
+                    passwordAddBtn.classList.remove('hidden');
+                    currentRoom.room_type = 'public';
+                    showRoomDetailPage();
+                } else {
+                    showNotification(roomNotification, data.message || '删除密码失败', 'error');
+                }
+            } catch (error) {
+                console.error('删除房间密码错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        // 刷新房间详情
+        async function refreshRoomDetails() {
+            if (!currentRoom) return;
+            
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/details`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentRoom = data.room;
+                    updateRoomInfo();
+                    loadRoomMembers();
+                    showNotification(roomNotification, '房间信息已刷新', 'success');
+                }
+            } catch (error) {
+                console.error('刷新房间详情错误:', error);
+            }
+        }
+        
+        // 加载房间成员
+        async function loadRoomMembers() {
+            if (!currentRoom) return;
+            
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/details`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                console.log('房间详情数据:', data);
+                if (response.ok) {
+                    const currentMember = data.room.members.find(m => m.username === currentUser.username);
+                    const isReady = currentMember ? currentMember.is_ready : false;
+                    readyGameBtn.textContent = isReady ? '取消准备' : '准备';
+                    await displayRoomMembers(data.room.members);
+                    // 检查当前用户头像是否有变化，若变化则清除旧缓存
+                    if (currentMember && typeof currentMember.image !== 'undefined' && currentMember.image !== 0) {
+                        // 清除所有avatar_userid_*缓存
+                        function openAvatarDB(callback) {
+                            const request = indexedDB.open('avatarCacheDB', 1);
+                            request.onupgradeneeded = function(event) {
+                                const db = event.target.result;
+                                if (!db.objectStoreNames.contains('avatarStore')) {
+                                    db.createObjectStore('avatarStore');
+                                }
+                            };
+                            request.onsuccess = function(event) {
+                                callback(event.target.result);
+                            };
+                            request.onerror = function() { callback(null); };
+                        }
+                        openAvatarDB(function(db) {
+                            if (!db) return;
+                            const tx = db.transaction('avatarStore', 'readwrite');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.getAllKeys();
+                            req.onsuccess = function() {
+                                const keys = req.result || [];
+                                keys.forEach(key => {
+                                    if (typeof key === 'string' && key.startsWith(`avatar_${currentMember.id}_`) && !key.endsWith(`_${currentMember.image}`)) {
+                                        store.delete(key);
+                                    }
+                                });
+                                db.close();
+                                // 刷新消息区
+                                if (typeof loadChatHistory === 'function') loadChatHistory();
+                            };
+                            req.onerror = function() { db.close(); };
+                        });
+                    }
+
+                    
+                }
+                
+            } catch (error) {
+                console.error('加载房间成员错误:', error);
+            }
+        }
+        
+        // 显示房间成员
+        async function displayRoomMembers(members) {
+            membersGrid.innerHTML = '';
+            if (members.length === 0) {
+                membersGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">暂无成员</div>';
+                return;
+            }
+            // 计算准备人数
+            let readyCount = 0;
+            const isRoomCreatorNow = currentUser && currentRoom.creator === currentUser.username;
+            // 收集所有头像缓存Promise
+            const avatarPromises = [];
+            members.forEach(member => {
+                const isCreator = member.username === currentRoom.creator;
+                const isCurrentUser = currentUser && member.username === currentUser.username;
+                const isReady = member.is_ready || false;
+                const isOnline = isCurrentUser ? true : (member.is_online || false); // 当前用户始终显示在线状态，其他成员根据数据判断
+                if (isReady) readyCount++;
+                const memberCard = document.createElement('div');
+                memberCard.className = `member-card ${isCreator ? 'creator' : ''} ${isReady ? 'ready' : ''} ${isOnline ? 'online' : ''}`;
+                // 头像缓存逻辑
+                let avatarUrl = '../default.png';
+                if (member.image !== 0 && member.id !== undefined) {
+                    // IndexedDB缓存key
+                    const cacheKey = `avatar_${member.id}_${member.image}`;
+                    // IndexedDB工具
+                    function openAvatarDB(callback) {
+                        const request = indexedDB.open('avatarCacheDB', 1);
+                        request.onupgradeneeded = function(event) {
+                            const db = event.target.result;
+                            if (!db.objectStoreNames.contains('avatarStore')) {
+                                db.createObjectStore('avatarStore');
+                            }
+                        };
+                        request.onsuccess = function(event) {
+                            callback(event.target.result);
+                        };
+                        request.onerror = function() { callback(null); };
+                    }
+                    function getAvatarFromDB(key, cb) {
+                        openAvatarDB(function(db) {
+                            if (!db) return cb(null);
+                            const tx = db.transaction('avatarStore', 'readonly');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.get(key);
+                            req.onsuccess = function() { cb(req.result); db.close(); };
+                            req.onerror = function() { cb(null); db.close(); };
+                        });
+                    }
+                    function setAvatarToDB(key, data, cb) {
+                        openAvatarDB(function(db) {
+                            if (!db) return cb && cb(false);
+                            const tx = db.transaction('avatarStore', 'readwrite');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.put(data, key);
+                            req.onsuccess = function() { cb && cb(true); db.close(); };
+                            req.onerror = function() { cb && cb(false); db.close(); };
+                        });
+                    }
+                    function clearOldAvatars(id, cb) {
+                        openAvatarDB(function(db) {
+                            if (!db) return cb && cb();
+                            const tx = db.transaction('avatarStore', 'readwrite');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.getAllKeys();
+                            req.onsuccess = function() {
+                                const keys = req.result || [];
+                                keys.forEach(key => {
+                                    if (typeof key === 'string' && key.startsWith(`avatar_${id}_`) && key !== cacheKey) {
+                                        store.delete(key);
+                                    }
+                                });
+                                db.close();
+                                cb && cb();
+                            };
+                            req.onerror = function() { db.close(); cb && cb(); };
+                        });
+                    }
+                    // 用Promise封装头像缓存流程
+                    const avatarPromise = new Promise(resolve => {
+                        getAvatarFromDB(cacheKey, function(cached) {
+                            if (cached) {
+                                avatarUrl = cached;
+                                // 立即刷新显示
+                                const avatarImg = memberCard.querySelector('.member-avatar-img');
+                                if (avatarImg) avatarImg.src = avatarUrl;
+                                resolve();
+                            } else {
+                                // 清除旧头像
+                                clearOldAvatars(member.id, function() {
+                                    avatarUrl = `/api/avatar/${member.id}/${member.image}`;
+                                    // 预加载图片并缓存base64
+                                    const img = new window.Image();
+                                    img.crossOrigin = 'anonymous';
+                                    img.onload = function() {
+                                        try {
+                                            const canvas = document.createElement('canvas');
+                                            canvas.width = img.width;
+                                            canvas.height = img.height;
+                                            const ctx = canvas.getContext('2d');
+                                            ctx.drawImage(img, 0, 0);
+                                            const dataURL = canvas.toDataURL('image/png');
+                                            setAvatarToDB(cacheKey, dataURL, function() {
+                                                // 立即刷新显示
+                                                const avatarImg = memberCard.querySelector('.member-avatar-img');
+                                                if (avatarImg) avatarImg.src = dataURL;
+                                                resolve();
+                                            });
+                                        } catch(e) { resolve(); }
+                                    };
+                                    img.onerror = function() { resolve(); };
+                                    img.src = avatarUrl;
+                                });
+                            }
+                        });
+                    });
+                    avatarPromises.push(avatarPromise);
+                }
+                const profileText = member.profile ? `<div class="member-profile">${member.profile}</div>` : '';
+                let kickBtnHtml = '';
+                if (isRoomCreatorNow && !isCreator) {
+                    kickBtnHtml = `<button class=\"kick-member-btn\" data-username=\"${member.username}\">踢出</button>`;
+                }
+                memberCard.innerHTML = `
+                    <div class="member-header">
+                        <img class="member-avatar member-avatar-img" src="${avatarUrl}" alt="头像" style="object-fit:cover;width:40px;height:40px;border-radius:50%;margin-right:10px;">
+                        <div class="member-info">
+                            <div class="member-name">${member.nickname}${'#'}${member.id}${isCurrentUser ? ' (我)' : ''}</div>
+                            <div class="member-tags">
+                                ${isCreator ? '<span class="member-tag tag-creator">房主</span>' : ''}
+                                <span class="member-tag ${isReady ? 'tag-ready' : 'tag-not-ready'}">
+                                    ${isReady ? '已准备' : '未准备'}
+                                </span>
+                                <span class="member-tag ${isOnline ? 'tag-online' : 'tag-offline'}">
+                                    ${isOnline ? '在线' : '离线'}
+                                </span>
+                                ${kickBtnHtml}
+                            </div>
+                        </div>
+                    </div>
+                    ${profileText}
+                `;
+                membersGrid.appendChild(memberCard);
+            });
+            // 等待所有头像缓存写入完成
+            await Promise.all(avatarPromises);
+            // 绑定踢出按钮事件
+            if (isRoomCreatorNow) {
+                const kickBtns = membersGrid.querySelectorAll('.kick-member-btn');
+                kickBtns.forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const username = this.getAttribute('data-username');
+                        const user_id = members.find(m => m.username === username).id;
+                        const nickname = members.find(m => m.username === username).nickname;
+                        if (!confirm(`确定要将 ${nickname} 踢出房间吗？`)) return;
+                        try {
+                            const response = await fetch(`/api/rooms/${currentRoom.id}/kick/${user_id}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${currentToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ username })
+                            });
+                            const data = await response.json();
+                            if (response.ok) {
+                                showNotification(roomNotification, '已将成员踢出', 'success');
+                                loadRoomMembers();
+                            } else {
+                                showNotification(roomNotification, data.message || '踢出失败', 'error');
+                            }
+                        } catch (error) {
+                            showNotification(roomNotification, '网络错误，踢出失败', 'error');
+                        }
+                    });
+                });
+            }
+            // 更新准备状态
+            if (isRoomCreatorNow && currentRoom.game_status === 'waiting') {
+                startGameBtn.disabled = readyCount < 2 || readyCount < members.length;
+            }
+            membersStatus.textContent = `${readyCount}/${members.length}人准备`;
+        }
+        
+        // 复制房间内容
+        function copyRoomAddress() {
+    const address = roomAddressDisplay.textContent;
+    if (!address || address === '暂无内容') {
+        showNotification(roomNotification, '没有可复制的内容', 'warning');
+        return;
+    }
+    // 优先使用 clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(address)
+            .then(() => {
+                showNotification(roomNotification, '内容已复制到剪贴板', 'success');
+            })
+            .catch(err => {
+                // 回退到 execCommand 方案
+                fallbackCopyText(address);
+            });
+    } else {
+        fallbackCopyText(address);
+    }
+
+    function fallbackCopyText(text) {
+        // 创建临时 input
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        input.setSelectionRange(0, input.value.length); // 兼容移动端
+        let copySuccess = false;
+        try {
+            copySuccess = document.execCommand('copy');
+        } catch (e) {
+            copySuccess = false;
+        }
+        document.body.removeChild(input);
+        if (copySuccess) {
+            showNotification(roomNotification, '内容已复制到剪贴板', 'success');
+        } else {
+            showNotification(roomNotification, '复制失败，请长按手动复制', 'error');
+        }
+    }
+        }
+        
+        // 编辑房间内容
+        function editRoomAddress() {
+            roomAddressDisplay.classList.add('hidden');
+            roomAddressEdit.classList.remove('hidden');
+            editAddressInput.value = currentRoom.server_address || '';
+            editAddressInput.focus();
+        }
+        
+        // 取消编辑
+        function cancelEditAddress() {
+            roomAddressEdit.classList.add('hidden');
+            roomAddressDisplay.classList.remove('hidden');
+        }
+        
+        // 保存房间内容
+        async function saveRoomAddress() {
+            const newAddress = editAddressInput.value.trim();
+            
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/address`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ address: newAddress })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentRoom.server_address = newAddress;
+                    roomAddressDisplay.textContent = newAddress || '暂无内容';
+                    cancelEditAddress();
+                    showNotification(roomNotification, '内容更新成功', 'success');
+                } else {
+                    showNotification(roomNotification, data.message || '更新失败', 'error');
+                }
+            } catch (error) {
+                console.error('更新内容错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        
+        // 开始游戏
+        async function startGame() {
+            if (!currentRoom || !isRoomCreator) return;
+            status_circle = ['waiting', 'playing', 'finished','waiting'];
+            status_title = ['开始游戏', '结束游戏', '重新等待','开始游戏'];
+            status_class = ['btn btn-success', 'btn btn-danger', 'btn btn-secondary','btn btn-success'];
+            for (let i = 0; i < status_circle.length; i++) {
+                if (i === 3) break;
+                if (currentRoom.game_status === status_circle[i]) {
+                    try {
+                        const response = await fetch(`/api/rooms/${currentRoom.id}/status`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${currentToken}`
+                            },
+                            body: JSON.stringify({ game_status: status_circle[i + 1] })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            currentRoom.game_status = status_circle[i + 1];
+                            startGameBtn.textContent = status_title[i + 1];
+                            startGameBtn.className = status_class[i + 1];
+                            updateRoomInfo();
+                        } else {
+                            showNotification(roomNotification, data.message || '操作失败', 'error');
+                        }
+                    } catch (error) {
+                        console.error('开始游戏错误:', error);
+                        showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+                    }
+                    break;
+                }
+            }
+        }
+        // 切换准备状态
+        async function toggleReadyStatus() {
+            if (!currentRoom) return;
+            
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/toggle-ready`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    readyGameBtn.textContent = data.is_ready ? '取消准备' : '准备';
+                    loadRoomMembers();
+                    showNotification(roomNotification, data.message || '状态已更新', 'success');
+                } else {
+                    showNotification(roomNotification, data.message || '操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('切换准备状态错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        
+        // 离开房间
+        async function leaveRoom() {
+            if (!currentRoom) return;
+            
+            if (isRoomCreator) {
+                if (!confirm('您确定要解散房间吗？所有成员将被移出房间。')) {
+                    return;
+                }
+            } else {
+                if (!confirm('确定要离开房间吗？')) {
+                    return;
+                }
+            }
+            
+            // 先离开SocketIO房间
+            if (insocketroomNow) {
+                leaveSocketIORoom(currentRoom.id);
+            }
+
+            
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/leave`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentRoom = null;
+                    
+                    // 更新"回到房间"按钮
+                    updateBackToRoomButton();
+                    
+                    // 返回房间列表页面
+                    showRoomListPage();
+                    
+                    // 刷新房间列表
+                    loadRooms();
+                    
+                    showNotification(roomsNotification, data.message || '已离开房间', 'success');
+                } else {
+                    showNotification(roomNotification, data.message || '操作失败', 'error');
+                }
+            } catch (error) {
+                console.error('离开房间错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+        // 返回房间列表
+        function backToRoomList() {
+            showRoomListPage();
+        }
+        
+        // 加载聊天消息
+        async function loadChatMessages() {
+            if (!currentRoom) return;
+            
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/chat`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayChatMessages(data.messages);
+                    // 加载消息后隐藏新消息提示
+                    hideNewMessageNotification();
+                }
+            } catch (error) {
+                console.error('加载聊天消息错误:', error);
+            }
+        }
+        
+        // 检查用户是否在聊天框底部
+        function checkIfUserAtBottom() {
+            const threshold = 100; // 距离底部50px以内算作在底部
+            return chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - threshold;
+        }
+        
+        // 显示新消息提示
+        function showNewMessageNotification() {
+            newMessageCountValue++;
+            newMessageCount.textContent = newMessageCountValue;
+            newMessageNotification.classList.remove('hidden');
+        }
+        
+        // 隐藏新消息提示
+        function hideNewMessageNotification() {
+            newMessageCountValue = 0;
+            newMessageNotification.classList.add('hidden');
+        }
+        
+        // 滚动到底部并隐藏提示
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            hideNewMessageNotification();
+            isUserAtBottom = true;
+        }
+        
+        // 显示聊天消息
+        function displayChatMessages(messages) {
+            chatMessages.innerHTML = '';
+            
+            if (messages.length === 0) {
+                chatMessages.innerHTML = '<div class="chat-message system"><div class="message-content">暂无聊天记录</div></div>';
+                return;
+            }
+            
+            messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                if (message.message_type === 'system') {
+                    messageDiv.className = 'chat-message system';
+                    messageDiv.innerHTML = `
+                        <div class="message-content">${message.content}</div>
+                    `;
+                } else {
+                    const isCurrentUser = currentUser && message.user_id === currentUser.id;
+                    messageDiv.setAttribute('data-message-id', message.id || '');
+                    messageDiv.className = `chat-message ${isCurrentUser ? 'current-user' : ''}`;
+                    const time = new Date(message.created_at).toLocaleString();
+                    
+                    // 头像逻辑（优先IndexedDB缓存）
+                    let avatarUrl = '../default.png';
+                    let cacheKey = null;
+                    if (typeof message.user_id !== 'undefined' && typeof message.image !== 'undefined' && message.image !== 0) {
+                        cacheKey = `avatar_${message.user_id}_${message.image}`;
+                    }
+                    // 聊天头像显示逻辑：优先IndexedDB缓存，未命中则拉取接口图片并转base64存储
+                    if (cacheKey) {
+                        // 先尝试缓存
+                        openAvatarDB(function(db) {
+                            if (!db) return;
+                            const tx = db.transaction('avatarStore', 'readonly');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.get(cacheKey);
+                            req.onsuccess = function() {
+                                const avatarImg = messageDiv.querySelector('.chat-avatar');
+                                if (req.result && avatarImg) {
+                                    avatarImg.src = req.result;
+                                } else {
+                                    // 未命中缓存，拉取图片
+                                    const url = `/api/avatar/${message.user_id}/${message.image}`;
+                                    if (avatarImg) avatarImg.src = url;
+                                    const img = new window.Image();
+                                    img.crossOrigin = 'anonymous';
+                                    img.onload = function() {
+                                        try {
+                                            const canvas = document.createElement('canvas');
+                                            canvas.width = img.width;
+                                            canvas.height = img.height;
+                                            const ctx = canvas.getContext('2d');
+                                            ctx.drawImage(img, 0, 0);
+                                            const dataURL = canvas.toDataURL('image/png');
+                                            // 写入缓存并立即刷新
+                                            openAvatarDB(function(db2) {
+                                                if (!db2) return;
+                                                const tx2 = db2.transaction('avatarStore', 'readwrite');
+                                                const store2 = tx2.objectStore('avatarStore');
+                                                const req2 = store2.put(dataURL, cacheKey);
+                                                req2.onsuccess = function() {
+                                                    if (avatarImg) avatarImg.src = dataURL;
+                                                    db2.close();
+                                                };
+                                                req2.onerror = function() { db2.close(); };
+                                            });
+                                        } catch(e) {}
+                                    };
+                                    img.src = url;
+                                }
+                                db.close();
+                            };
+                            req.onerror = function() { db.close(); };
+                        });
+                    } else if (typeof message.user_id !== 'undefined') {
+                        // 没有image，尝试任意avatar_userid_*缓存
+                        openAvatarDB(function(db) {
+                            if (!db) return;
+                            const tx = db.transaction('avatarStore', 'readonly');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.getAllKeys();
+                            req.onsuccess = function() {
+                                const keys = req.result || [];
+                                const found = keys.find(key => typeof key === 'string' && key.startsWith(`avatar_${message.user_id}_`));
+                                if (found) {
+                                    const req2 = store.get(found);
+                                    req2.onsuccess = function() {
+                                        const avatarImg = messageDiv.querySelector('.chat-avatar');
+                                        if (req2.result && avatarImg) avatarImg.src = req2.result;
+                                        db.close();
+                                    };
+                                    req2.onerror = function() { db.close(); };
+                                } else {
+                                    db.close();
+                                }
+                            };
+                            req.onerror = function() { db.close(); };
+                        });
+                    }
+                    // 判断是否为base64图片消息
+                    let messageContentHtml = '';
+                    if (typeof message.content === 'string' && message.content.startsWith('data:image')) {
+                        // base64图片，限制最大宽高，添加点击放大功能
+                        max_width = chatMessages.clientWidth - 120;
+                        messageContentHtml = `<img src="${message.content}" alt="图片" class="chat-img-previewable" style="max-width:${max_width}px;max-height:220px;border-radius:8px;box-shadow:0 1px 4px #0002;cursor:pointer;">`;
+                    } else {
+                        messageContentHtml = message.content;
+                    }
+                    // 先渲染默认头像
+                    messageDiv.innerHTML = `
+                        <div style="display: flex; align-items: flex-start;">
+                            <img class="chat-avatar" src="${avatarUrl}" alt="头像" style="width:32px;height:32px;border-radius:50%;object-fit:cover;margin-right:8px;flex-shrink:0;">
+                            <div style="flex:1;">
+                                <div class="message-header">
+                                    <span class="message-user">${message.nickname || '未知用户'}</span>
+                                    <span class="message-time">${time}</span>
+                                </div>
+                                <div class="message-content">${messageContentHtml}</div>
+                            </div>
+                        </div>
+                    `;
+                    // 图片点击放大
+                    const imgEl = messageDiv.querySelector('.chat-img-previewable');
+                    if (imgEl) {
+                        imgEl.addEventListener('click', function() {
+                            showImagePreviewModal(imgEl.src, null, 'preview');
+                        });
+                    }
+                    // 撤回消息：仅允许本人和房主可撤回
+                    if (isCurrentUser || (isRoomCreator && currentUser && message.user_id !== currentUser.id)) {
+                        messageDiv.title = '双击撤回此消息';
+                        messageDiv.style.cursor = 'pointer';
+                        messageDiv.addEventListener('dblclick', function() {
+                            if (!confirm('确定要撤回这条消息吗？')) return;
+                            // 通过SocketIO发送撤回事件
+                            if (typeof socket !== 'undefined' && socket && socket.connected) {
+                                console.log('通过SocketIO撤回消息');
+                                data = {
+                                    message_id: message.id
+                                }
+                                socket.emit('withdraw_chat',currentUser, data, function(res) {
+                                    if (res && res.success) {
+                                        showNotification(roomNotification, '消息已撤回', 'success');
+                                        loadChatMessages();
+                                    } else {
+                                        console.log(res);
+                                        showNotification(roomNotification, (res && res.message) || '撤回失败', 'error');
+                                    }
+                                });
+                            } else {
+                                showNotification(roomNotification, 'SocketIO未连接，无法撤回', 'error');
+                            }
+                        });
+                    }
+                    const avatarImg = messageDiv.querySelector('.chat-avatar');
+                    // 封装IndexedDB工具
+                    function openAvatarDB(callback) {
+                        const request = indexedDB.open('avatarCacheDB', 1);
+                        request.onupgradeneeded = function(event) {
+                            const db = event.target.result;
+                            if (!db.objectStoreNames.contains('avatarStore')) {
+                                db.createObjectStore('avatarStore');
+                            }
+                        };
+                        request.onsuccess = function(event) {
+                            callback(event.target.result);
+                        };
+                        request.onerror = function() { callback(null); };
+                    }
+                    function getAvatarFromDB(key, cb) {
+                        openAvatarDB(function(db) {
+                            if (!db) return cb(null);
+                            const tx = db.transaction('avatarStore', 'readonly');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.get(key);
+                            req.onsuccess = function() { cb(req.result); db.close(); };
+                            req.onerror = function() { cb(null); db.close(); };
+                        });
+                    }
+                    function getAnyAvatarForUser(userId, cb) {
+                        openAvatarDB(function(db) {
+                            if (!db) return cb(null);
+                            const tx = db.transaction('avatarStore', 'readonly');
+                            const store = tx.objectStore('avatarStore');
+                            const req = store.getAllKeys();
+                            req.onsuccess = function() {
+                                const keys = req.result || [];
+                                const found = keys.find(key => typeof key === 'string' && key.startsWith(`avatar_${userId}_`));
+                                if (found) {
+                                    const req2 = store.get(found);
+                                    req2.onsuccess = function() { cb(req2.result); db.close(); };
+                                    req2.onerror = function() { cb(null); db.close(); };
+                                } else {
+                                    db.close();
+                                    cb(null);
+                                }
+                            };
+                            req.onerror = function() { db.close(); cb(null); };
+                        });
+                    }
+                    // 异步查找头像
+                    if (cacheKey) {
+                        getAvatarFromDB(cacheKey, function(cached) {
+                            if (cached && avatarImg) {
+                                avatarImg.src = cached;
+                            } else if (typeof message.user_id !== 'undefined' && typeof message.image !== 'undefined' && message.image !== 0) {
+                                // 主动拉取接口图片并写入IndexedDB
+                                const url = `/api/avatar/${message.user_id}/${message.image}`;
+                                avatarImg.src = url;
+                                // 预加载图片并缓存base64
+                                const img = new window.Image();
+                                img.crossOrigin = 'anonymous';
+                                img.onload = function() {
+                                    try {
+                                        const canvas = document.createElement('canvas');
+                                        canvas.width = img.width;
+                                        canvas.height = img.height;
+                                        const ctx = canvas.getContext('2d');
+                                        ctx.drawImage(img, 0, 0);
+                                        const dataURL = canvas.toDataURL('image/png');
+                                        // 写入缓存并立即刷新
+                                        openAvatarDB(function(db) {
+                                            if (!db) return;
+                                            const tx = db.transaction('avatarStore', 'readwrite');
+                                            const store = tx.objectStore('avatarStore');
+                                            const req = store.put(dataURL, cacheKey);
+                                            req.onsuccess = function() {
+                                                if (avatarImg) avatarImg.src = dataURL;
+                                                db.close();
+                                            };
+                                            req.onerror = function() { db.close(); };
+                                        });
+                                    } catch(e) {}
+                                };
+                                img.src = url;
+                            }
+                        });
+                    } else if (typeof message.user_id !== 'undefined') {
+                        getAnyAvatarForUser(message.user_id, function(cached) {
+                            if (cached && avatarImg) {
+                                avatarImg.src = cached;
+                            }
+                        });
+                    }
+                }
+                chatMessages.appendChild(messageDiv);
+            });
+            
+            // 只有在用户已经在底部时才滚动到底部
+            if (isUserAtBottom) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+        
+        // 发送聊天消息
+        async function sendChatMessage() {
+            if (!currentRoom) return;
+            
+            const content = chatInput.value.trim();
+            
+            if (!content) {
+                showNotification(roomNotification, '消息不能为空', 'warning');
+                return;
+            }
+            
+            // 首先尝试通过SocketIO发送
+            if (isSocketConnected) {
+                const sentViaSocket = sendChatMessageViaSocketIO(content);
+                if (sentViaSocket) {
+                    // 清空输入框
+                    chatInput.value = '';
+                    return;
+                }
+            }
+            
+            // 如果SocketIO不可用，回退到HTTP请求
+            console.log('SocketIO不可用，使用HTTP发送消息');
+            try {
+                const response = await fetch(`/api/rooms/${currentRoom.id}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ content: content })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    chatInput.value = '';
+                    // 如果是通过HTTP发送的，消息已经添加到数据库，需要手动添加到界面
+                    if (data) {
+                        addMessageToChat(data);
+                    }
+                } else {
+                    showNotification(roomNotification, data.message || '发送失败', 'error');
+                }
+            } catch (error) {
+                console.error('发送聊天消息错误:', error);
+                showNotification(roomNotification, '网络错误，请稍后重试', 'error');
+            }
+        }
+
+        
+        function addMessageToChat(message) {
+            if (!message) return;
+            const messageDiv = document.createElement('div');
+            if (chatMessages.innerHTML === '<div class="chat-message system"><div class="message-content">暂无聊天记录</div></div>') {
+                chatMessages.innerHTML = '';
+            }
+            if (message.message_type === 'system') {
+                messageDiv.className = 'chat-message system';
+                messageDiv.innerHTML = `
+                    <div class="message-content">${message.content}</div>
+                `;
+            } else {
+                const isCurrentUser = currentUser && message.user_id === currentUser.id;
+                messageDiv.setAttribute('data-message-id', message.id || '');
+                messageDiv.className = `chat-message ${isCurrentUser ? 'current-user' : ''}`;
+                const time = new Date(message.created_at).toLocaleString();
+                // 头像逻辑（优先IndexedDB缓存）
+                let avatarUrl = '../default.png';
+                let cacheKey = null;
+                if (typeof message.user_id !== 'undefined') {
+                    if (typeof message.image !== 'undefined' && message.image !== 0) {
+                        cacheKey = `avatar_${message.user_id}_${message.image}`;
+                    } else {
+                        // 没有image，尝试任意avatar_userid_*缓存
+                        cacheKey = null;
+                    }
+                }
+                // 判断是否为base64图片消息
+                let messageContentHtml = '';
+                if (typeof message.content === 'string' && message.content.startsWith('data:image')) {
+                    // base64图片，限制最大宽高，添加点击放大功能
+                    //最大限制宽度为现在的聊天框宽度
+                    max_width = chatMessages.clientWidth - 120;
+                    messageContentHtml = `<img src="${message.content}" alt="图片" class="chat-img-previewable" style="max-width:${max_width}px;max-height:220px;border-radius:8px;box-shadow:0 1px 4px #0002;cursor:pointer;">`;
+                } else {
+                    messageContentHtml = message.content;
+                }
+                // 先渲染默认头像
+                messageDiv.innerHTML = `
+                    <div style="display: flex; align-items: flex-start;">
+                        <img class="chat-avatar" src="${avatarUrl}" alt="头像" style="width:32px;height:32px;border-radius:50%;object-fit:cover;margin-right:8px;flex-shrink:0;">
+                        <div style="flex:1;">
+                            <div class="message-header">
+                                <span class="message-user">${message.nickname || '未知用户'}</span>
+                                <span class="message-time">${time}</span>
+                            </div>
+                            <div class="message-content">${messageContentHtml}</div>
+                        </div>
+                    </div>
+                `;
+                // 图片点击放大
+                const imgEl = messageDiv.querySelector('.chat-img-previewable');
+                if (imgEl) {
+                    imgEl.addEventListener('click', function() {
+                        showImagePreviewModal(imgEl.src, null, 'preview');
+                    });
+                }
+                // 撤回消息：仅允许本人和房主可撤回
+                if (isCurrentUser || (isRoomCreator && currentUser && message.user_id !== currentUser.id)) {
+                    messageDiv.title = '双击撤回此消息';
+                    messageDiv.style.cursor = 'pointer';
+                    messageDiv.addEventListener('dblclick', function() {
+                        if (!confirm('确定要撤回这条消息吗？')) return;
+                        // 通过SocketIO发送撤回事件
+                        if (typeof socket !== 'undefined' && socket && socket.connected) {
+                            console.log('通过SocketIO撤回消息');
+                            data = {
+                                message_id: message.id
+                            }
+                            socket.emit('withdraw_chat',currentUser, data, function(res) {
+                                if (res && res.success) {
+                                    showNotification(roomNotification, '消息已撤回', 'success');
+                                    loadChatMessages();
+                                } else {
+                                    console.log(res);
+                                    showNotification(roomNotification, (res && res.message) || '撤回失败', 'error');
+                                }
+                            });
+                        } else {
+                            showNotification(roomNotification, 'SocketIO未连接，无法撤回', 'error');
+                        }
+                    });
+                }
+                const avatarImg = messageDiv.querySelector('.chat-avatar');
+                // 封装IndexedDB工具
+                function openAvatarDB(callback) {
+                    const request = indexedDB.open('avatarCacheDB', 1);
+                    request.onupgradeneeded = function(event) {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains('avatarStore')) {
+                            db.createObjectStore('avatarStore');
+                        }
+                    };
+                    request.onsuccess = function(event) {
+                        callback(event.target.result);
+                    };
+                    request.onerror = function() { callback(null); };
+                }
+                function getAvatarFromDB(key, cb) {
+                    openAvatarDB(function(db) {
+                        if (!db) return cb(null);
+                        const tx = db.transaction('avatarStore', 'readonly');
+                        const store = tx.objectStore('avatarStore');
+                        const req = store.get(key);
+                        req.onsuccess = function() { cb(req.result); db.close(); };
+                        req.onerror = function() { cb(null); db.close(); };
+                    });
+                }
+                function getAnyAvatarForUser(userId, cb) {
+                    openAvatarDB(function(db) {
+                        if (!db) return cb(null);
+                        const tx = db.transaction('avatarStore', 'readonly');
+                        const store = tx.objectStore('avatarStore');
+                        const req = store.getAllKeys();
+                        req.onsuccess = function() {
+                            const keys = req.result || [];
+                            const found = keys.find(key => typeof key === 'string' && key.startsWith(`avatar_${userId}_`));
+                            if (found) {
+                                const req2 = store.get(found);
+                                req2.onsuccess = function() { cb(req2.result); db.close(); };
+                                req2.onerror = function() { cb(null); db.close(); };
+                            } else {
+                                db.close();
+                                cb(null);
+                            }
+                        };
+                        req.onerror = function() { db.close(); cb(null); };
+                    });
+                }
+                // 异步查找头像
+                if (cacheKey) {
+                    getAvatarFromDB(cacheKey, function(cached) {
+                        if (cached && avatarImg) {
+                            avatarImg.src = cached;
+                        } else if (typeof message.user_id !== 'undefined' && typeof message.image !== 'undefined' && message.image !== 0) {
+                            // 主动拉取接口图片并写入IndexedDB
+                            const url = `/api/avatar/${message.user_id}/${message.image}`;
+                            avatarImg.src = url;
+                            // 预加载图片并缓存base64
+                            const img = new window.Image();
+                            img.crossOrigin = 'anonymous';
+                            img.onload = function() {
+                                try {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0);
+                                    const dataURL = canvas.toDataURL('image/png');
+                                    // 写入缓存并立即刷新
+                                    openAvatarDB(function(db) {
+                                        if (!db) return;
+                                        const tx = db.transaction('avatarStore', 'readwrite');
+                                        const store = tx.objectStore('avatarStore');
+                                        const req = store.put(dataURL, cacheKey);
+                                        req.onsuccess = function() {
+                                            if (avatarImg) avatarImg.src = dataURL;
+                                            db.close();
+                                        };
+                                        req.onerror = function() { db.close(); };
+                                    });
+                                } catch(e) {}
+                            };
+                            img.src = url;
+                        }
+                    });
+                } else if (typeof message.user_id !== 'undefined') {
+                    getAnyAvatarForUser(message.user_id, function(cached) {
+                        if (cached && avatarImg) {
+                            avatarImg.src = cached;
+                        }
+                    });
+                }
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            
+            // 检查用户是否在聊天框底部
+            const isAtBottom = checkIfUserAtBottom();
+            
+            if (isAtBottom || message.user_id === currentUser.id) {
+                // 如果用户在底部，自动滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } else {
+                // 如果用户不在底部，显示新消息提示
+                showNewMessageNotification();
+            }
+        }
+        
+        // 显示通知
+        function showNotification(element, message, type = 'error') {
+            element.textContent = message;
+            element.className = `notification ${type}`;
+            element.classList.remove('hidden');
+            
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // 聊天消息滚动事件监听器
+        chatMessages.addEventListener('scroll', function() {
+            const isAtBottom = checkIfUserAtBottom();
+            isUserAtBottom = isAtBottom;
+            
+            // 如果用户滚动到底部，隐藏新消息提示
+            if (isAtBottom) {
+                hideNewMessageNotification();
+            }
+        });
+        
+        // 新消息提示点击事件
+        scrollToBottomLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            scrollToBottom();
+        });
+        
+        window.addEventListener('beforeunload', function() {
+            
+            // 断开SocketIO连接
+            if (socket) {
+                socket.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>

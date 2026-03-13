@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- flask-socketio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starst联机系统 - 外观</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <script src="header-component.js" defer></script>
+    <script src="static/js/global-bg.js"></script>
+    <style>
+    /* 全局背景图片容器 */
+    #global-bg-image {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        opacity: 1;
+    }
+    </style>
+</head>
+<body>
+    <header-component></header-component>
+    
+    <div class="container">
+        <h2>主题切换</h2>
+        <button id="light-theme-btn" class="btn btn-accent">浅色主题</button>
+        <button id="dark-theme-btn" class="btn btn-secondary">深色主题</button>
+        <button id="default-theme-btn" class="btn btn-panel">默认主题</button>
+        <button id="import-palette" class="btn btn-primary">导入主题</button>
+        <button id="export-palette" class="btn btn-secondary">导出主题</button>
+        <div style="height: 24px;"></div>
+        <button id="load-custom1" class="btn btn-success">加载自定义1</button>
+        <button id="save-custom1" class="btn btn-warning">保存自定义1</button>
+        <button id="load-custom2" class="btn btn-success">加载自定义2</button>
+        <button id="save-custom2" class="btn btn-warning">保存自定义2</button>
+
+        
+
+        <hr style="margin: 24px 0;">
+        <h2>自定义配色</h2>
+        <div id="custom-colors">
+            <div style="margin-bottom:16px;">
+                <label for="primary-color">主色(primary):</label>
+                <input type="color" id="primary-color" value="#4a6fa5">
+                <button id="primary-back" class="btn btn-secondary">撤销</button>
+                <button id="primary-confirm" class="btn btn-primary">确认</button>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label for="secondary-color">副色(secondary):</label>
+                <input type="color" id="secondary-color" value="#6b8cbc">
+                <button id="secondary-back" class="btn btn-secondary">撤销</button>
+                <button id="secondary-confirm" class="btn btn-primary">确认</button>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label for="accent-color">强调色(accent):</label>
+                <input type="color" id="accent-color" value="#ff7e5f">
+                <button id="accent-back" class="btn btn-secondary">撤销</button>
+                <button id="accent-confirm" class="btn btn-primary">确认</button>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label for="front-color">前景(front):</label>
+                <input type="color" id="front-color" value="#2c3e50">
+                <button id="front-back" class="btn btn-secondary">撤销</button>
+                <button id="front-confirm" class="btn btn-primary">确认</button>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label for="panel-color">面板(panel):</label>
+                <input type="color" id="panel-color" value="#ffffff">
+                <button id="panel-back" class="btn btn-secondary">撤销</button>
+                <button id="panel-confirm" class="btn btn-primary">确认</button>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label for="background-color">背景(background):</label>
+                <input type="color" id="background-color" value="#dcdcde">
+                <button id="background-back" class="btn btn-secondary">撤销</button>
+                <button id="background-confirm" class="btn btn-primary">确认</button>
+            </div>
+        </div>
+        
+        <hr style="margin: 24px 0;">
+        <h2>自定义全局背景</h2>
+        <div style="margin-bottom: 12px;">
+            <input type="file" id="bg-image-input" accept="image/*">
+            <button id="remove-bg-image" class="btn btn-secondary">移除背景图片</button>
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label for="bg-opacity-range">透明度：</label>
+            <input type="range" id="bg-opacity-range" min="0" max="100" value="100">
+            <span id="bg-opacity-value">100%</span>
+        </div>
+        <div style="color: #888; font-size: 0.95em;">图片仅本地生效，刷新后仍保留</div>
+    </div>
+    
+    <script>
+        color_history = [-1,-1,-1,-1,-1,-1]; //记录每个颜色上一次的原色，方便撤销时恢复
+        document.addEventListener('DOMContentLoaded', function() {
+                        // 自定义配色区逻辑
+                        window.colorNames = [
+                            {name:'primary', label:'主色', picker:'primary-color', btn2:'primary-back',btn:'primary-confirm'},
+                            {name:'secondary', label:'副色', picker:'secondary-color',btn2:'secondary-back', btn:'secondary-confirm'},
+                            {name:'accent', label:'强调色', picker:'accent-color',btn2:'accent-back', btn:'accent-confirm'},
+                            {name:'front', label:'前景', picker:'front-color',btn2:'front-back', btn:'front-confirm'},
+                            {name:'panel', label:'面板', picker:'panel-color',btn2:'panel-back', btn:'panel-confirm'},
+                            {name:'background', label:'背景', picker:'background-color', btn2:'background-back', btn:'background-confirm'}
+                        ];
+                        window.colorNames.forEach((item, idx) => {
+                            const picker = document.getElementById(item.picker);
+                            const btn = document.getElementById(item.btn);
+                            const btn2 = document.getElementById(item.btn2);
+                            if (picker && btn) {
+                                // 初始化picker显示当前colorlist
+                                if (window.colorlist && window.colorlist[idx]) {
+                                    if (item.name === 'background') {
+                                        // background是rgb，转为hex显示
+                                        picker.value = rgbToHex(window.colorlist[5]);
+                                    } else {
+                                        picker.value = window.colorlist[idx];
+                                    }
+                                }
+                                btn.addEventListener('click', function() {
+                                    let val = picker.value;
+                                    // background特殊处理
+                                    if (item.name === 'background') {
+                                        color_history[5] = window.colorlist[5]; 
+                                        window.colorlist[5] = hexToRgb(val);
+                                    } else {
+                                        color_history[idx] = window.colorlist[idx]; 
+                                        window.colorlist[idx] = val;
+                                    }
+                                    // 调用header组件的customizeColors
+                                    if (typeof customizeColors === 'function') {
+                                        customizeColors(val, item.name);
+                                    }
+                                });
+                                btn2.addEventListener('click', function() {
+                                    let val = color_history[idx];
+                                    if (val === -1) return; // 没有历史记录
+                                    // background特殊处理
+                                    if (item.name === 'background') {
+                                        window.colorlist[5] = val;
+                                        picker.value = rgbToHex(val);
+                                    } else {
+                                        window.colorlist[idx] = val;
+                                        picker.value = val;
+                                    }
+                                });
+                            }
+                        });
+
+                        // hex转rgb字符串
+                        function hexToRgb(hex) {
+                            hex = hex.replace('#','');
+                            if (hex.length === 3) hex = hex.split('').map(x=>x+x).join('');
+                            const r = parseInt(hex.substring(0,2),16);
+                            const g = parseInt(hex.substring(2,4),16);
+                            const b = parseInt(hex.substring(4,6),16);
+                            return `${r},${g},${b}`;
+                        }
+                        // rgb字符串转hex
+                        function rgbToHex(rgb) {
+                            const arr = rgb.split(',').map(x=>parseInt(x));
+                            if (arr.length!==3) return '#dcdcde';
+                            return '#' + arr.map(x=>x.toString(16).padStart(2,'0')).join('');
+                        }
+            // 获取header组件
+            const header = document.querySelector('header-component');
+            // 检查登录状态
+            const token = localStorage.getItem('token');
+            const currentUser = localStorage.getItem('currentUser');
+            //if (!token || !currentUser) {
+            //    window.location.href = 'login.html';
+            //    return;
+            //}
+            header.updateUserInfo(JSON.parse(currentUser));
+
+            // 主题切换按钮逻辑
+            const lightBtn = document.getElementById('light-theme-btn');
+            const darkBtn = document.getElementById('dark-theme-btn');
+            const defaultBtn = document.getElementById('default-theme-btn');
+            const exportPaletteBtn = document.getElementById('export-palette');
+            const importPaletteBtn = document.getElementById('import-palette');
+            const loadCustom1Btn = document.getElementById('load-custom1');
+            const saveCustom1Btn = document.getElementById('save-custom1');
+            const loadCustom2Btn = document.getElementById('load-custom2');
+            const saveCustom2Btn = document.getElementById('save-custom2');
+            const removeBgImageBtn = document.getElementById('remove-bg-image');
+            // 动态显示主题按钮
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                if (lightBtn) lightBtn.style.display = 'none';
+                if (darkBtn) darkBtn.style.display = '';
+            } else if (savedTheme === 'dark') {
+                if (darkBtn) darkBtn.style.display = 'none';
+                if (lightBtn) lightBtn.style.display = '';
+            } else {
+                // 未设置时都显示
+                if (lightBtn) lightBtn.style.display = '';
+                if (darkBtn) darkBtn.style.display = '';
+            }
+            removeBgImageBtn.addEventListener('click', function() {
+                // 从IndexedDB删除背景图片
+                openCustomDB(function(db) {
+                    const tx = db.transaction('customStore', 'readwrite');
+                    const store = tx.objectStore('customStore');
+                    const req = store.delete('globalBgImage');
+                    req.onsuccess = function() {
+                        localStorage.removeItem('globalBgImage');
+                        window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                        alert('背景图片已移除');
+                        db.close();
+                    };
+                    req.onerror = function() {
+                        alert('背景图片移除失败');
+                        db.close();
+                    };
+                });
+            });
+            exportPaletteBtn.addEventListener('click', function() {
+                if (window.colorlist) {
+                    // 用json记录theme、colorlist、图片和透明度
+                    // 需要从IndexedDB读取图片数据
+                    const data = {
+                        theme: localStorage.getItem('theme'),
+                        colorlist: window.colorlist,
+                        globalBgImage: null, // 占位，后续填充
+                        globalBgOpacity: localStorage.getItem('globalBgOpacity')
+                    };
+                    // 检查localStorage中globalBgImage是否为indexeddb
+                    if (localStorage.getItem('globalBgImage') === 'indexeddb') {
+                        loadBgImageFromDB(function(imgData) {
+                            data.globalBgImage = imgData || null;
+                            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+                            const dlAnchorElem = document.createElement('a');
+                            dlAnchorElem.setAttribute("href", dataStr);
+                            dlAnchorElem.setAttribute("download", "starst_palette.json");
+                            document.body.appendChild(dlAnchorElem);
+                            dlAnchorElem.click();
+                            dlAnchorElem.remove();
+                        });
+                    } else {
+                        data.globalBgImage = localStorage.getItem('globalBgImage');
+                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+                        const dlAnchorElem = document.createElement('a');
+                        dlAnchorElem.setAttribute("href", dataStr);
+                        dlAnchorElem.setAttribute("download", "starst_palette.json");
+                        document.body.appendChild(dlAnchorElem);
+                        dlAnchorElem.click();
+                        dlAnchorElem.remove();
+                    }
+                } else {
+                    alert('没有可导出的配色数据');
+                }
+            });
+
+            importPaletteBtn.addEventListener('click', function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'application/json';
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        try {
+                            const data = JSON.parse(evt.target.result);
+                            if (data.theme && data.colorlist) {
+                                if (data.theme === 'light') {
+                                    setLightTheme();
+                                    window.usingdark = false;
+                                    if (lightBtn) lightBtn.style.display = 'none';
+                                    if (darkBtn) darkBtn.style.display = '';
+                                } else if (data.theme === 'dark') {
+                                    setDarkTheme();
+                                    window.usingdark = true;
+                                    if (lightBtn) lightBtn.style.display = '';
+                                    if (darkBtn) darkBtn.style.display = 'none';
+                                }
+                                // 恢复颜色数据
+                                window.colorlist = data.colorlist;
+                                // 根据colorlist更新六个picker颜色
+                                colorNames.forEach((item, idx) => {
+                                    const picker = document.getElementById(item.picker);
+                                    if (picker && window.colorlist && window.colorlist[idx]) {
+                                        if (item.name === 'background') {
+                                            customizeColors(rgbToHex(window.colorlist[5]), 'background');
+                                            picker.value = rgbToHex(window.colorlist[5]);
+                                        } else {
+                                            customizeColors(window.colorlist[idx], item.name);
+                                            picker.value = window.colorlist[idx];
+                                        }
+                                    }
+                                });
+                                // 恢复全局背景图片和透明度
+                                if (data.globalBgImage) {
+                                    // 如果是dataURL，写入IndexedDB并设置localStorage为indexeddb
+                                    if (typeof data.globalBgImage === 'string' && data.globalBgImage.startsWith('data:image/')) {
+                                        saveBgImageToDB(data.globalBgImage, function(success) {
+                                            if (success) {
+                                                localStorage.setItem('globalBgImage', 'indexeddb');
+                                                window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                                            } else {
+                                                alert('导入的背景图片写入数据库失败');
+                                            }
+                                        });
+                                    } else {
+                                        // 兼容旧格式
+                                        localStorage.setItem('globalBgImage', data.globalBgImage);
+                                        window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                                    }
+                                }
+                                if (data.globalBgOpacity) {
+                                    localStorage.setItem('globalBgOpacity', data.globalBgOpacity);
+                                    window.dispatchEvent(new StorageEvent('storage', {key:'globalBgOpacity'}));
+                                    const range = document.getElementById('bg-opacity-range');
+                                    const value = document.getElementById('bg-opacity-value');
+                                    if (range && value) {
+                                        range.value = Math.round(Number(data.globalBgOpacity) * 100);
+                                        value.textContent = `${Math.round(Number(data.globalBgOpacity) * 100)}%`;
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            alert('导入的配色数据格式不正确');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            });
+
+
+            // ====== IndexedDB工具函数 ======
+            function openCustomDB(callback) {
+                const request = indexedDB.open('starstCustomDB', 1);
+                request.onupgradeneeded = function(event) {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('customStore')) {
+                        db.createObjectStore('customStore');
+                    }
+                };
+                request.onsuccess = function(event) {
+                    callback(event.target.result);
+                };
+                request.onerror = function() {
+                    alert('无法打开自定义数据数据库');
+                };
+            }
+
+            function saveCustomToDB(key, data, cb) {
+                openCustomDB(function(db) {
+                    const tx = db.transaction('customStore', 'readwrite');
+                    const store = tx.objectStore('customStore');
+                    const req = store.put(data, key);
+                    req.onsuccess = function() {
+                        if (cb) cb(true);
+                        db.close();
+                    };
+                    req.onerror = function() {
+                        if (cb) cb(false);
+                        db.close();
+                    };
+                });
+            }
+
+            function loadCustomFromDB(key, cb) {
+                openCustomDB(function(db) {
+                    const tx = db.transaction('customStore', 'readonly');
+                    const store = tx.objectStore('customStore');
+                    const req = store.get(key);
+                    req.onsuccess = function() {
+                        cb(req.result);
+                        db.close();
+                    };
+                    req.onerror = function() {
+                        cb(null);
+                        db.close();
+                    };
+                });
+            }
+
+            saveCustom1Btn.addEventListener('click', function() {
+                loadCustomFromDB('custom1', function(existing) {
+                    if (existing && !confirm('自定义1已存在，是否覆盖？')) {
+                        return;
+                    }
+                    const data = {
+                        theme: localStorage.getItem('theme'),
+                        colorlist: window.colorlist,
+                        globalBgImage: null,
+                        globalBgOpacity: localStorage.getItem('globalBgOpacity')
+                    };
+                    //填写globalBgImage
+                    if (localStorage.getItem('globalBgImage') === 'indexeddb') {
+                        loadBgImageFromDB(function(imgData) {
+                            data.globalBgImage = imgData || null;
+                            saveCustomToDB('custom1', data, function(success) {
+                                if (success) {
+                                    alert('自定义1保存成功');
+                                } else {
+                                    alert('自定义1保存失败');
+                                }
+                            });
+                        });
+                    } else {
+                        data.globalBgImage = localStorage.getItem('globalBgImage');
+                        saveCustomToDB('custom1', data, function(success) {
+                            if (success) {
+                                alert('自定义1保存成功');
+                            } else {
+                                alert('自定义1保存失败');
+                            }
+                        });
+                    }
+                })
+            });
+
+            saveCustom2Btn.addEventListener('click', function() {
+                // 检查是否已存在，提示覆盖
+                loadCustomFromDB('custom2', function(existing) {
+                    if (existing && !confirm('自定义2已存在，是否覆盖？')) {
+                        return;
+                    }
+                    const data = {
+                        theme: localStorage.getItem('theme'),
+                        colorlist: window.colorlist,
+                        globalBgImage: null,
+                        globalBgOpacity: localStorage.getItem('globalBgOpacity')
+                    };
+                    //填写globalBgImage
+                    if (localStorage.getItem('globalBgImage') === 'indexeddb') {
+                        loadBgImageFromDB(function(imgData) {
+                            data.globalBgImage = imgData || null;
+                            saveCustomToDB('custom2', data, function(success) {
+                                if (success) {
+                                    alert('自定义2保存成功');
+                                } else {
+                                    alert('自定义2保存失败');
+                                }
+                            });
+                        });
+                    } else {
+                        data.globalBgImage = localStorage.getItem('globalBgImage');
+                        saveCustomToDB('custom2', data, function(success) {
+                            if (success) {
+                                alert('自定义2保存成功');
+                            } else {
+                                alert('自定义2保存失败');
+                            }
+                        });
+                    }
+                });
+            });
+
+            loadCustom1Btn.addEventListener('click', function(){
+                loadCustomFromDB('custom1', function(data) {
+                    if (!data) { alert('没有保存的自定义1数据'); return; }
+                    try {
+                        if (data.theme && data.colorlist) {
+                            if (data.theme === 'light') {
+                                setLightTheme();
+                                window.usingdark = false;
+                                if (lightBtn) lightBtn.style.display = 'none';
+                                if (darkBtn) darkBtn.style.display = '';
+                            } else if (data.theme === 'dark') {
+                                setDarkTheme();
+                                window.usingdark = true;
+                                if (lightBtn) lightBtn.style.display = '';
+                                if (darkBtn) darkBtn.style.display = 'none';
+                            }
+                            // 恢复颜色数据
+                            window.colorlist = data.colorlist;
+                            // 根据colorlist更新六个picker颜色
+                            colorNames.forEach((item, idx) => {
+                                const picker = document.getElementById(item.picker);
+                                if (picker && window.colorlist && window.colorlist[idx]) {
+                                    if (item.name === 'background') {
+                                        customizeColors(rgbToHex(window.colorlist[5]), 'background');
+                                        picker.value = rgbToHex(window.colorlist[5]);
+                                    } else {
+                                        customizeColors(window.colorlist[idx], item.name);
+                                        picker.value = window.colorlist[idx];
+                                    }
+                                }
+                            });
+                            if (data.globalBgImage) {
+                                // 如果是dataURL，写入IndexedDB并设置localStorage为indexeddb
+                                if (typeof data.globalBgImage === 'string' && data.globalBgImage.startsWith('data:image/')) {
+                                    saveBgImageToDB(data.globalBgImage, function(success) {
+                                        if (success) {
+                                            localStorage.setItem('globalBgImage', 'indexeddb');
+                                            window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                                        } else {
+                                            alert('导入的背景图片写入数据库失败');
+                                        }
+                                    });
+                                } else {
+                                    // 兼容旧格式
+                                    localStorage.setItem('globalBgImage', data.globalBgImage);
+                                    window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                                }
+                            }
+                            if (data.globalBgOpacity) {
+                                localStorage.setItem('globalBgOpacity', data.globalBgOpacity);
+                                window.dispatchEvent(new StorageEvent('storage', {key:'globalBgOpacity'}));
+                                const range = document.getElementById('bg-opacity-range');
+                                const value = document.getElementById('bg-opacity-value');
+                                if (range && value) {
+                                    range.value = Math.round(Number(data.globalBgOpacity) * 100);
+                                    value.textContent = `${Math.round(Number(data.globalBgOpacity) * 100)}%`;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        alert('导入的配色数据格式不正确');
+                    }
+                });
+            });
+
+            loadCustom2Btn.addEventListener('click', function(){
+                loadCustomFromDB('custom2', function(data) {
+                    if (!data) { alert('没有保存的自定义2数据'); return; }
+                    try {
+                        if (data.theme && data.colorlist) {
+                            if (data.theme === 'light') {
+                                setLightTheme();
+                                window.usingdark = false;
+                                if (lightBtn) lightBtn.style.display = 'none';
+                                if (darkBtn) darkBtn.style.display = '';
+                            } else if (data.theme === 'dark') {
+                                setDarkTheme();
+                                window.usingdark = true;
+                                if (lightBtn) lightBtn.style.display = '';
+                                if (darkBtn) darkBtn.style.display = 'none';
+                            }
+                            // 恢复颜色数据
+                            window.colorlist = data.colorlist;
+                            // 根据colorlist更新六个picker颜色
+                            colorNames.forEach((item, idx) => {
+                                const picker = document.getElementById(item.picker);
+                                if (picker && window.colorlist && window.colorlist[idx]) {
+                                    if (item.name === 'background') {
+                                        customizeColors(rgbToHex(window.colorlist[5]), 'background');
+                                        picker.value = rgbToHex(window.colorlist[5]);
+                                    } else {
+                                        customizeColors(window.colorlist[idx], item.name);
+                                        picker.value = window.colorlist[idx];
+                                    }
+                                }
+                            });
+                            if (data.globalBgImage) {
+                                // 如果是dataURL，写入IndexedDB并设置localStorage为indexeddb
+                                if (typeof data.globalBgImage === 'string' && data.globalBgImage.startsWith('data:image/')) {
+                                    saveBgImageToDB(data.globalBgImage, function(success) {
+                                        if (success) {
+                                            localStorage.setItem('globalBgImage', 'indexeddb');
+                                            window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                                        } else {
+                                            alert('导入的背景图片写入数据库失败');
+                                        }
+                                    });
+                                } else {
+                                    // 兼容旧格式
+                                    localStorage.setItem('globalBgImage', data.globalBgImage);
+                                    window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                                }
+                            }
+                            if (data.globalBgOpacity) {
+                                localStorage.setItem('globalBgOpacity', data.globalBgOpacity);
+                                window.dispatchEvent(new StorageEvent('storage', {key:'globalBgOpacity'}));
+                                const range = document.getElementById('bg-opacity-range');
+                                const value = document.getElementById('bg-opacity-value');
+                                if (range && value) {
+                                    range.value = Math.round(Number(data.globalBgOpacity) * 100);
+                                    value.textContent = `${Math.round(Number(data.globalBgOpacity) * 100)}%`;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        alert('导入的配色数据格式不正确');
+                    }
+                });
+            });
+            if (lightBtn && darkBtn) {
+                lightBtn.addEventListener('click', function() {
+                    setLightTheme();
+                    darkBtn.style.display = '';
+                    lightBtn.style.display = 'none';
+                    localStorage.setItem('customized', 'false');
+                    window.usingdark = false;
+                    //根据colorlist更新六个picker颜色
+                    colorNames.forEach((item, idx) => {
+                        const picker = document.getElementById(item.picker);
+                        if (picker && window.colorlist && window.colorlist[idx]) {
+                            if (item.name === 'background') {
+                                picker.value = rgbToHex(window.colorlist[5]);
+                            } else {
+                                picker.value = window.colorlist[idx];
+                            }
+                        }
+                    });
+                });
+                darkBtn.addEventListener('click', function() {
+                    setDarkTheme();
+                    lightBtn.style.display = '';
+                    darkBtn.style.display = 'none';
+                    localStorage.setItem('customized', 'false');
+                    window.usingdark = true;
+                    //根据colorlist更新六个picker颜色
+                    colorNames.forEach((item, idx) => {
+                        const picker = document.getElementById(item.picker);
+                        if (picker && window.colorlist && window.colorlist[idx]) {
+                            if (item.name === 'background') {
+                                picker.value = rgbToHex(window.colorlist[5]);
+                            } else {
+                                picker.value = window.colorlist[idx];
+                            }
+                        }
+                    });
+                });
+
+                defaultBtn.addEventListener('click', async function() {
+                    localStorage.removeItem('theme');
+                    localStorage.removeItem('customized');
+                    window.colorlist = null;
+                    await setDefaultTheme();
+                    lightBtn.style.display = '';
+                    darkBtn.style.display = 'none';
+                });
+            }
+
+            // ====== 全局背景图片功能 ======
+            // ========== 全局背景图片存储到IndexedDB ==========
+            function saveBgImageToDB(dataUrl, cb) {
+                openCustomDB(function(db) {
+                    const tx = db.transaction('customStore', 'readwrite');
+                    const store = tx.objectStore('customStore');
+                    const req = store.put(dataUrl, 'globalBgImage');
+                    req.onsuccess = function() { if (cb) cb(true); db.close(); };
+                    req.onerror = function() { if (cb) cb(false); db.close(); };
+                });
+            }
+
+            function loadBgImageFromDB(cb) {
+                openCustomDB(function(db) {
+                    const tx = db.transaction('customStore', 'readonly');
+                    const store = tx.objectStore('customStore');
+                    const req = store.get('globalBgImage');
+                    req.onsuccess = function() { cb(req.result); db.close(); };
+                    req.onerror = function() { cb(null); db.close(); };
+                });
+            }
+
+            document.getElementById('bg-image-input').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    // 存到IndexedDB
+                    saveBgImageToDB(evt.target.result, function(success) {
+                        if (success) {
+                            // 兼容原有逻辑，localStorage只存一个标记
+                            localStorage.setItem('globalBgImage', 'indexeddb');
+                            // 主动触发storage事件
+                            window.dispatchEvent(new StorageEvent('storage', {key:'globalBgImage'}));
+                        } else {
+                            alert('背景图片保存失败');
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // 页面加载时自动从IndexedDB恢复背景图片
+            function setBgImageFromDB() {
+                loadBgImageFromDB(function(dataUrl) {
+                    if (dataUrl) {
+                        // 你需要根据你的global-bg.js或页面结构，设置背景图片
+                        // 假设有id为global-bg-image的div
+                        const bgDiv = document.getElementById('global-bg-image');
+                        if (bgDiv) {
+                            bgDiv.style.backgroundImage = `url('${dataUrl}')`;
+                        }
+                    }
+                });
+            }
+            // 如果localStorage中globalBgImage为indexeddb，则用IndexedDB图片
+            if (localStorage.getItem('globalBgImage') === 'indexeddb') {
+                setBgImageFromDB();
+            }
+            // 透明度滑块
+            document.getElementById('bg-opacity-range').addEventListener('input', function(e) {
+                const v = Number(e.target.value) / 100;
+                localStorage.setItem('globalBgOpacity', v);
+                // 主动触发storage事件
+                window.dispatchEvent(new StorageEvent('storage', {key:'globalBgOpacity'}));
+                document.getElementById('bg-opacity-value').textContent = `${e.target.value}%`;
+            });
+            // 初始化滑块显示
+            (function(){
+                const opacity = localStorage.getItem('globalBgOpacity') || '1';
+                const range = document.getElementById('bg-opacity-range');
+                const value = document.getElementById('bg-opacity-value');
+                if (range && value) {
+                    range.value = Math.round(Number(opacity) * 100);
+                    value.textContent = `${Math.round(Number(opacity) * 100)}%`;
+                }
+            })();
+        });
+
+        let socket = null;
+        // 未登录检查
+        function checkLogin() {
+            const token = localStorage.getItem('token');
+            const currentPage = window.location.pathname.split('/').pop();
+            const publicPages = ['index.html', 'login.html', ''];
+            //if (!token && !publicPages.includes(currentPage)) {
+            //    window.location.href = 'login.html';
+            //    return false;
+            //}
+            return true;
+        }
+        // 页面加载时检查登录状态
+        if (checkLogin()) {
+            initSocketIO();
+        }
+
+window.updatePickers = function() {
+    colorNames.forEach((item, idx) => {
+        const picker = document.getElementById(item.picker);
+        if (picker && window.colorlist && window.colorlist[idx]) {
+            if (item.name === 'background') {
+                picker.value = rgbToHex(window.colorlist[5]);
+            } else {
+                picker.value = window.colorlist[idx];
+            }
+        }
+    });
+};
+
+        function initSocketIO() {
+            socket = io();
+            const currentToken = localStorage.getItem('token');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            socket.on('connect', function() {
+            console.log('SocketIO连接成功');
+            
+            // 加入匹配房间（房间0）
+            socket.emit('join_room_zero', { token: currentToken }, function(response) {
+                if (response && response.success) {
+                    console.log('成功在其他界面加入房间0');
+                }
+            });
+            
+            // 发送身份验证
+            socket.emit('authenticate', { token: currentToken });
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('SocketIO断开连接');
+            });
+
+
+        }
+    </script>
+</body>
+</html>

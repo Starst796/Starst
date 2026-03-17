@@ -1,4 +1,0 @@
-Option1 selected
-Option2
-Option3
-Others

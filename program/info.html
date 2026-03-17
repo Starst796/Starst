@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- flask-socketio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starst联机系统 - 关于</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <script src="header-component.js" defer></script>
+    <style>
+        #global-bg-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            opacity: 1;
+        }
+        
+        .shop-container {
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+        
+        .shop-categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .category-btn {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .category-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .category-btn:hover:not(.active) {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .shop-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .shop-item {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .shop-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        
+        .item-image {
+            height: 180px;
+            background-color: #f5f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+        
+        .item-content {
+            padding: 20px;
+        }
+        
+        .item-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .item-description {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .item-price {
+            font-weight: bold;
+            color: var(--accent-color);
+            font-size: 1.2rem;
+        }
+        
+        .item-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        .tag-new {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+        
+        .tag-hot {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--error-color);
+        }
+        
+        .tag-sale {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .user-balance {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .balance-amount {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .balance-label {
+            color: var(--gray-color);
+        }
+        
+        .recharge-btn {
+            margin-left: auto;
+        }
+        
+        .coming-soon {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--gray-color);
+        }
+        
+        .coming-soon h3 {
+            margin-bottom: 20px;
+            color: var(--front-color);
+        }
+    </style>
+    <script src="static/js/global-bg.js"></script>
+</head>
+<body>
+    <header-component></header-component>
+    
+    <div class="container">
+        <div class="shop-container">
+            <div class="panel">
+                <h2>关于项目</h2>
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div class="information">
+                        <h3>本项目为非营利性个人项目，用途在于提供一个Websocket应用实例供爱好者学习</h3>
+                        <p>开发者：Starst</p>
+                        <p>B站：https://space.bilibili.com/399170457</p>
+                        <p>QQ：429242008</p>
+                        <p>项目正式版将在卫戍协议开启同期上线</p>
+                        <p>届时将同步上传通用模型至GitHub供大家学习使用</p>
+                        <p>欢迎任何形式的意见反馈</p>
+                    </div>
+                    <img src="example.png" alt="示例图片" style="max-width: 320px; width: 60vw; height: auto; display: block; margin: 32px auto; box-shadow:0 2px 12px rgba(0,0,0,0.08); border-radius: 12px;" />
+                        <h3>🥤请我喝咖啡🥤</h3>
+                </div>
+            </div>
+            
+
+            
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取header组件
+            const header = document.querySelector('header-component');
+            
+            // 检查登录状态
+            const token = localStorage.getItem('token');
+            const currentUser = localStorage.getItem('currentUser');
+            
+            //if (!token || !currentUser) {
+            //    window.location.href = 'login.html';
+            //    return;
+            //}
+            
+            header.updateUserInfo(JSON.parse(currentUser));
+            
+            // 模拟商品数据
+            const shopItems = [
+                {
+                    id: 1,
+                    name: '黄金VIP',
+                    description: '30天VIP特权，尊贵标识，专属房间',
+                    price: '¥30',
+                    icon: '👑',
+                    tag: 'hot'
+                },
+                {
+                    id: 2,
+                    name: '炫酷皮肤',
+                    description: '限量版游戏角色皮肤',
+                    price: '¥15',
+                    icon: '🎨',
+                    tag: 'new'
+                },
+                {
+                    id: 3,
+                    name: '胜利特效',
+                    description: '游戏胜利时的华丽特效',
+                    price: '¥10',
+                    icon: '✨',
+                    tag: ''
+                },
+                {
+                    id: 4,
+                    name: '表情包套装',
+                    description: '全套聊天表情包',
+                    price: '¥8',
+                    icon: '😀',
+                    tag: 'sale'
+                }
+            ];
+            
+            // 渲染商品列表
+            const shopItemsContainer = document.querySelector('.shop-items');
+            shopItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'shop-item';
+                
+                let tagHtml = '';
+                if (item.tag) {
+                    let tagClass = '';
+                    switch(item.tag) {
+                        case 'new': tagClass = 'tag-new'; break;
+                        case 'hot': tagClass = 'tag-hot'; break;
+                        case 'sale': tagClass = 'tag-sale'; break;
+                    }
+                    tagHtml = `<div class="item-tag ${tagClass}">${item.tag === 'new' ? '新品' : item.tag === 'hot' ? '热门' : '特价'}</div>`;
+                }
+                
+                itemElement.innerHTML = `
+                    ${tagHtml}
+                    <div class="item-image">
+                        <span>${item.icon}</span>
+                    </div>
+                    <div class="item-content">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-description">${item.description}</div>
+                        <div class="item-footer">
+                            <div class="item-price">${item.price}</div>
+                            <button class="btn btn-primary" disabled>购买</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 分类切换
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.category-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                });
+            });
+        });
+    
+        let socket = null;
+        // 未登录检查
+        function checkLogin() {
+            const token = localStorage.getItem('token');
+            const currentPage = window.location.pathname.split('/').pop();
+            const publicPages = ['index.html', 'login.html', ''];
+            
+            //if (!token && !publicPages.includes(currentPage)) {
+            //    window.location.href = 'login.html';
+            //    return false;
+            //}
+            return true;
+        }
+        
+        // 页面加载时检查登录状态
+        if (checkLogin()) {
+            initSocketIO();
+        }
+
+
+        function initSocketIO() {
+            socket = io();
+            const currentToken = localStorage.getItem('token');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            socket.on('connect', function() {
+            console.log('SocketIO连接成功');
+            
+            // 加入匹配房间（房间0）
+            socket.emit('join_room_zero', { token: currentToken }, function(response) {
+                if (response && response.success) {
+                    console.log('成功在其他界面加入房间0');
+                }
+            });
+            
+            // 发送身份验证
+            socket.emit('authenticate', { token: currentToken });
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('SocketIO断开连接');
+            });
+
+
+        }
+    </script>
+</body>
+</html>

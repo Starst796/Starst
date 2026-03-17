@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starst联机系统 - 登录/注册</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <script src="header-component.js" defer></script>
+    <style>
+        #global-bg-image {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        opacity: 1;
+    }
+
+        .auth-container {
+            max-width: 500px;
+            margin: 50px auto;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--front-color);
+        }
+        
+        .auth-tab {
+            padding: 10px 30px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--secondary-color);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-tab.active {
+            color: var(--front-color);
+            border-bottom: 2px solid var(--front-color);
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .auth-notice {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--gray-color);
+        }
+        
+        .auth-notice a {
+            color: var(--front-color);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .password-toggle {
+            position: relative;
+        }
+        
+        .password-toggle .toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--front-color);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header-component></header-component>
+    
+    <div class="container">
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="login-tab">登录</div>
+                <div class="auth-tab" id="register-tab">注册</div>
+            </div>
+            
+            <!-- 登录表单 -->
+            <div class="auth-form active" id="login-form">
+                <div class="panel">
+                    <h2>用户登录</h2>
+                    <div class="notification hidden" id="login-notification"></div>
+                    
+                    <form id="loginForm">
+                        <label for="login-username">用户名</label>
+                        <div class="form-group">
+                            <input type="text" id="login-username" class="form-control" required>
+                        </div>
+                        <label for="login-password">密码</label>
+                        <div class="form-group password-toggle">
+                            <input type="password" id="login-password" class="form-control" required style="padding-right: 40px;">
+                            <button type="button" class="toggle-btn" data-target="login-password">👁</button>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">登录</button>
+                            <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'">返回主页</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div class="auth-form" id="register-form">
+                <div class="panel">
+                    <h2>用户注册</h2>
+                    <div class="notification hidden" id="register-notification"></div>
+                    
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label for="register-nickname">昵称</label>
+                            <input type="text" id="register-nickname" class="form-control" required>
+                            <small style="color: var(--gray-color);">昵称将显示给其他用户</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="register-username">用户名</label>
+                            <input type="text" id="register-username" class="form-control" required>
+                            <small style="color: var(--gray-color);">用于登录的用户名，3-20位字符</small>
+                        </div>
+                        
+                        <div class="form-group password-toggle">
+                            <label for="register-password">密码</label>
+                            <input type="password" id="register-password" class="form-control" required>
+                            <button type="button" class="toggle-btn" data-target="register-password">👁</button>
+                            <small style="color: var(--gray-color);">密码至少6位字符</small>
+                        </div>
+                        
+                        <div class="form-group password-toggle">
+                            <label for="register-confirm-password">确认密码</label>
+                            <div class="form-group password-toggle">
+                            <input type="password" id="register-confirm-password" class="form-control" required>
+                            <button type="button" class="toggle-btn" data-target="register-confirm-password">👁</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success" style="flex: 1;">注册</button>
+                            <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'">返回主页</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="auth-notice">
+                <span id="toggle-text">还没有账号？<a id="toggle-link">立即注册</a></span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取header组件
+            const header = document.querySelector('header-component');
+            
+            // 检查登录状态
+            const token = localStorage.getItem('token');
+            const currentUser = localStorage.getItem('currentUser');
+            
+            if (token && currentUser) {
+                // 已登录，跳转到主页
+                window.location.href = 'index.html';
+            } else {
+                header.updateUserInfo(null);
+            }
+            
+            // 密码显示/隐藏切换
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        this.textContent = '👁‍🗨';
+                    } else {
+                        input.type = 'password';
+                        this.textContent = '👁';
+                    }
+                });
+            });
+            
+            // 标签页切换
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const toggleLink = document.getElementById('toggle-link');
+            const toggleText = document.getElementById('toggle-text');
+            
+            function showLogin() {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                loginForm.classList.add('active');
+                registerForm.classList.remove('active');
+                toggleText.innerHTML = '还没有账号？<a id="toggle-link">立即注册</a>';
+                updateToggleLink();
+            }
+            
+            function showRegister() {
+                loginTab.classList.remove('active');
+                registerTab.classList.add('active');
+                loginForm.classList.remove('active');
+                registerForm.classList.add('active');
+                toggleText.innerHTML = '已有账号？<a id="toggle-link">立即登录</a>';
+                updateToggleLink();
+            }
+            
+            function updateToggleLink() {
+                const newToggleLink = document.getElementById('toggle-link');
+                newToggleLink.addEventListener('click', function() {
+                    if (loginTab.classList.contains('active')) {
+                        showRegister();
+                    } else {
+                        showLogin();
+                    }
+                });
+            }
+            
+            loginTab.addEventListener('click', showLogin);
+            registerTab.addEventListener('click', showRegister);
+            updateToggleLink();
+            
+            // 登录表单提交
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value;
+                const notification = document.getElementById('login-notification');
+                
+                if (!username || !password) {
+                    showNotification(notification, '请输入用户名和密码！', 'error');
+                    return;
+                }
+                
+                const btn = this.querySelector('button[type="submit"]');
+                const originalText = btn.textContent;
+                btn.textContent = '登录中...';
+                btn.disabled = true;
+                
+                fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.token) {
+                        // 登录成功
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('currentUser', JSON.stringify(data.user));
+                        
+                        showNotification(notification, '登录成功！正在跳转...', 'success');
+                        
+                        // 延迟跳转，让用户看到成功消息
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    } else {
+                        showNotification(notification, data.message || '登录失败！', 'error');
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('登录错误:', error);
+                    showNotification(notification, '网络错误，请稍后重试！', 'error');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+            });
+            
+            // 注册表单提交
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const nickname = document.getElementById('register-nickname').value.trim();
+                const username = document.getElementById('register-username').value.trim();
+                const password = document.getElementById('register-password').value;
+                const confirmPassword = document.getElementById('register-confirm-password').value;
+                const notification = document.getElementById('register-notification');
+                
+                // 验证输入
+                if (!nickname || !username || !password || !confirmPassword) {
+                    showNotification(notification, '请填写所有必填项！', 'error');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    showNotification(notification, '两次输入的密码不一致！', 'error');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showNotification(notification, '密码至少需要6个字符！', 'error');
+                    return;
+                }
+                
+                const btn = this.querySelector('button[type="submit"]');
+                const originalText = btn.textContent;
+                btn.textContent = '注册中...';
+                btn.disabled = true;
+                
+                fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        nickname: nickname // 后端需要处理这个字段
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.token) {
+                        // 注册成功
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('currentUser', JSON.stringify(data.user));
+                        
+                        showNotification(notification, '注册成功！正在跳转...', 'success');
+                        
+                        // 延迟跳转
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    } else {
+                        showNotification(notification, data.message || '注册失败！', 'error');
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('注册错误:', error);
+                    showNotification(notification, '网络错误，请稍后重试！', 'error');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+            });
+        });
+        
+        function showNotification(element, message, type) {
+            element.textContent = message;
+            element.className = 'notification ' + type;
+            element.classList.remove('hidden');
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+    <style>
+    #global-bg-image {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        opacity: 1;
+    }
+    </style>
+    <script src="static/js/global-bg.js"></script>
+</body>
+</html>

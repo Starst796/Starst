@@ -424,6 +424,7 @@ def get_rooms(current_user):
             'member_count': len(room.members),
             'max_players': room.max_players,
             'room_type': room.room_type,
+            'game_status': room.game_status,
             'is_owner_online': room.creator_id in online_user_list
         })
     return jsonify({
@@ -1632,6 +1633,7 @@ def tips_update_online_users(user_id):
             'member_count': len(room.members),
             'max_players': room.max_players,
             'room_type': room.room_type,
+            'game_status': room.game_status,
             'is_owner_online': room.creator_id in online_user_list
         }
         socketio.emit('room_updated', modify_room, to='0')
